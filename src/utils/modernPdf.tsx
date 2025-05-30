@@ -23,23 +23,67 @@ export function getModernPaymentRequestDocDefinition(
       }
     }),
     content: [
-      { text: 'PHIẾU ĐỀ NGHỊ THANH TOÁN', style: 'header', alignment: 'center' },
-      { text: `Số: ${data.so}`, style: 'info' },
-      { text: `Ngày lập: ${formatDate(data.ngay)}`, style: 'info' },
-      data.soPR ? { text: `Số PR: ${data.soPR}`, style: 'info' } : null,
-      { text: `Người đề nghị: ${data.nguoiDeNghi}`, style: 'info' },
-      { text: `Bộ phận: ${data.boPhan}`, style: 'info' },
-      data.nganSach ? { text: `Nguồn ngân sách: ${data.nganSach}`, style: 'info' } : null,
-      data.maKhoanMuc ? { text: `Mã khoản mục: ${data.maKhoanMuc}`, style: 'info' } : null,
-      data.keHoachChi ? { text: `Theo kế hoạch chi: ${data.keHoachChi}`, style: 'info' } : null,
-      { text: 'Nội dung thanh toán:', style: 'subheader', margin: [0, 10, 0, 5] },
-      { text: data.noiDungThanhToan, style: 'paragraph' },
-      { text: `Nhà cung cấp: ${data.nhaCungCap}`, style: 'info', margin: [0, 5, 0, 5] },
-      { text: `Số tiền: ${formatCurrency(data.soTien)}`, style: 'infoAmount' },
-      { text: `(Bằng chữ: ${data.bangChu})`, style: 'infoAmountText' },
-      data.ngayDenHan ? { text: `Ngày đến hạn thanh toán: ${formatDate(data.ngayDenHan)}`, style: 'info' } : null,
-      data.chungTuDinhKem ? { text: `Chứng từ đính kèm: ${data.chungTuDinhKem}`, style: 'info' } : null,
-    ].filter(Boolean), // Remove nulls from optional fields
+      /* ---------- HEADER BLOCK ---------- */
+      {
+        table: {
+          widths: ['30%', '40%', '30%'],
+          body: [
+            [
+              {
+                stack: [
+                  { text: `Số: ${data.so || ''}`, style: 'info' },
+                  { text: `Ngày: ${formatDate(data.ngay)}`, style: 'info' },
+                  { text: data.soPR ? `Số PR: ${data.soPR}` : 'Số PR:', style: 'info' }
+                ]
+              },
+              { text: 'PHIẾU ĐỀ NGHỊ THANH TOÁN', style: 'header', alignment: 'center' },
+              {
+                stack: [
+                  { text: 'Lần ban hành: 01', style: 'info', alignment: 'right' },
+                  { text: 'Ngày hiệu lực: 18/7/22', style: 'info', alignment: 'right' },
+                  { text: 'Nợ:', style: 'info', alignment: 'right' },
+                  { text: 'Có:', style: 'info', alignment: 'right' }
+                ]
+              }
+            ]
+          ]
+        },
+        layout: 'noBorders'
+      },
+      {
+        canvas: [
+          { type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.75, lineColor: '#999999' }
+        ],
+        margin: [0, 6, 0, 10]
+      },
+
+      /* ---------- PAYMENT METHOD ---------- */
+      {
+        columns: [
+          { text: '☐ Tiền mặt', style: 'checkbox' },
+          { text: '☐ Chuyển khoản', style: 'checkbox' }
+        ],
+        margin: [0, 5, 0, 5]
+      },
+      {
+        canvas: [
+          { type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.75, lineColor: '#999999' }
+        ],
+        margin: [0, 6, 0, 10]
+      },
+
+      /* ---------- FORM FIELDS ---------- */
+      { text: `1. Người đề nghị: ${data.nguoiDeNghi}   ĐT/Số nội bộ: __________________`, style: 'paragraph' },
+      { text: `2. Bộ phận (1): ${data.boPhan}   Dự án(2): __________________`, style: 'paragraph' },
+      { text: `3. Ngân sách sử dụng: ☐ Ngân sách hoạt động   ☐ Ngân sách Dự Án   Mã khoản mục ngân sách: ${data.maKhoanMuc || ''}`, style: 'paragraph' },
+      { text: `4. Kế hoạch chi hàng tháng: ☐ Trong kế hoạch Chi   ☐ Ngoài kế hoạch Chi`, style: 'paragraph' },
+      { text: '5. Nội dung thanh toán:', style: 'paragraph' },
+      { text: data.noiDungThanhToan, style: 'paragraph', margin: [15, 0, 0, 5] },
+      { text: `6. Nhà thầu/ nhà cung cấp/ Đối tác: ${data.nhaCungCap || ''}`, style: 'paragraph' },
+      { text: `7. Số tiền thanh toán: ${formatCurrency(data.soTien)}`, style: 'paragraph' },
+    ],
+
+    /* ---------- STYLES ---------- */
     styles: {
       header: { fontSize: 16, bold: true, margin: [0, 0, 0, 15] },
       subheader: { fontSize: 13, bold: true, margin: [0, 10, 0, 5] },
@@ -47,31 +91,24 @@ export function getModernPaymentRequestDocDefinition(
       infoAmount: { fontSize: 11, bold: true, margin: [0, 5, 0, 0] },
       infoAmountText: { fontSize: 10, italics: true, margin: [0, 0, 0, 10] },
       paragraph: { fontSize: 10, margin: [0, 0, 0, 5], alignment: 'justify' },
-      tableHeader: { bold: true, fontSize: 9, color: 'black', fillColor: '#eeeeee', alignment: 'center' },
+      tableHeader: { bold: true, fontSize: 9, fillColor: '#eeeeee', alignment: 'center' },
       tableCell: { fontSize: 8, margin: [2, 2, 2, 2] },
       tableCellNumber: { fontSize: 8, margin: [2, 2, 2, 2], alignment: 'right' },
       totalRowCell: { bold: true, fontSize: 9, margin: [2, 2, 2, 2] },
       totalRowCellAmount: { bold: true, fontSize: 9, margin: [2, 2, 2, 2], alignment: 'right' },
-      signatureText: { fontSize: 10, bold: true, alignment: 'center'},
-      signatureDate: { fontSize: 9, alignment: 'center', margin: [0, 2, 0, 0]},
+      signatureText: { fontSize: 10, bold: true, alignment: 'center' },
+      signatureDate: { fontSize: 9, alignment: 'center', margin: [0, 2, 0, 0] },
+      checkbox: { fontSize: 10, margin: [0, 1, 0, 1] },
+      signatureHeader: { fontSize: 11, bold: true, alignment: 'center' },
     },
-    defaultStyle: {
-      font: 'Roboto',
-      fontSize: 10,
-      lineHeight: 1.2,
-    }
+
+    defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.2 }
   };
 
+  /* ---------- DETAIL TABLE (if any) ---------- */
   if (data.chiTiet && data.chiTiet.length > 0) {
     const tableBody: TableCell[][] = [
-      [
-        { text: 'STT', style: 'tableHeader' },
-        { text: 'Diễn giải', style: 'tableHeader' },
-        { text: 'Số lượng', style: 'tableHeader' },
-        { text: 'Đơn vị', style: 'tableHeader' },
-        { text: 'Đơn giá', style: 'tableHeader' },
-        { text: 'Thành tiền', style: 'tableHeader' },
-      ]
+      ['STT', 'Diễn giải', 'Số lượng', 'Đơn vị', 'Đơn giá', 'Thành tiền'].map(h => ({ text: h, style: 'tableHeader' })) as TableCell[]
     ];
 
     data.chiTiet.forEach((item: PaymentDetail) => {
@@ -86,50 +123,109 @@ export function getModernPaymentRequestDocDefinition(
     });
 
     tableBody.push([
-      { text: '', style: 'tableCell' }, // Empty for STT
-      { text: 'TỔNG CỘNG', style: 'totalRowCell', colSpan: 4, alignment: 'right' },
-      { text: '' }, { text: '' }, { text: '' }, // Empty cells due to colSpan for SL, DV, DonGia
+      { text: '', style: 'tableCell' },
+      { text: 'TỔNG CỘNG', style: 'totalRowCell', colSpan: 4, alignment: 'right' }, {}, {}, {},
       { text: formatCurrency(data.soTien), style: 'totalRowCellAmount' },
     ]);
 
-    docDefinition.content.push({ text: 'Chi tiết thanh toán:', style: 'subheader', margin: [0,15,0,5] });
+    docDefinition.content.push({ text: 'Chi tiết thanh toán:', style: 'subheader', margin: [0, 15, 0, 5] });
     docDefinition.content.push({
       table: {
         headerRows: 1,
         widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto'],
-        body: tableBody,
+        body: tableBody
       },
       layout: {
-        hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length || i === 1) ? 0.5 : 0.25,
-        vLineWidth: (i: number, node: any) => (i === 0 || i === node.table.widths.length) ? 0.5 : 0.25,
-        hLineColor: (i: number, node: any) => (i === 0 || i === node.table.body.length || i === 1) ? 'black' : 'gray',
-        vLineColor: (i: number, node: any) => (i === 0 || i === node.table.widths.length) ? 'black' : 'gray',
-        paddingLeft: (_i: number, _node: any) => 4,
-        paddingRight: (_i: number, _node: any) => 4,
-        paddingTop: (_i: number, _node: any) => 3,
-        paddingBottom: (_i: number, _node: any) => 3,
+        hLineWidth: (i, node) => (i === 0 || i === node.table.body.length || i === 1) ? 0.5 : 0.25,
+        vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length) ? 0.5 : 0.25,
+        hLineColor: (i, node) => (i === 0 || i === node.table.body.length || i === 1) ? 'black' : 'gray',
+        vLineColor: (i, node) => (i === 0 || i === node.table.widths.length) ? 'black' : 'gray',
+        paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 3, paddingBottom: () => 3,
+        fillColor: (rowIndex: number) =>
+          rowIndex === 0
+            ? '#eeeeee'             // header row (already styled)
+            : rowIndex % 2 === 0
+            ? '#f9f9f9'             // even data rows
+            : null,                 // odd data rows
       }
     });
   }
 
+  /* ---------- SIGNATURE SECTIONS ---------- */
+  // Bộ phận đề nghị
+  docDefinition.content.push({ text: 'BỘ PHẬN ĐỀ NGHỊ', style: 'signatureHeader', margin: [0, 20, 0, 5] });
   docDefinition.content.push({
     columns: [
-      { stack: [{text: 'Người đề nghị', style: 'signatureText'}, {text: '(Ký, họ tên)', italics: true, fontSize: 9, alignment: 'center'}, {text: '\n\n\n\n\n'}, {text: data.nguoiDeNghi, style: 'signatureText'}], width: '*'},
-      { stack: [{text: 'Trưởng bộ phận', style: 'signatureText'}, {text: '(Ký, họ tên)', italics: true, fontSize: 9, alignment: 'center'}, {text: '\n\n\n\n\n'}, {text: '.........................', style: 'signatureText'}], width: '*'},
-      { stack: [{text: 'Giám đốc', style: 'signatureText'}, {text: '(Ký, họ tên)', italics: true, fontSize: 9, alignment: 'center'}, {text: '\n\n\n\n\n'}, {text: '.........................', style: 'signatureText'}], width: '*'},
-    ],
-    margin: [0, 30, 0, 0] // Add margin before signature section
+      {
+        stack: [
+          { text: 'Lập phiếu', style: 'signatureText' },
+          { text: 'Nhân viên bộ phận', italics: true, fontSize: 9, alignment: 'center' },
+          { text: '\n\n\n\n\n' },
+          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
+          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
+        ], width: '*'
+      },
+      {
+        stack: [
+          { text: 'Kiểm tra/ Xét duyệt', style: 'signatureText' },
+          { text: 'Phụ trách Bộ Phận/Khối', italics: true, fontSize: 9, alignment: 'center' },
+          { text: '\n\n\n\n\n' },
+          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
+          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
+        ], width: '*'
+      },
+    ]
   });
-  
-  // Add footer with page numbers
-  docDefinition.footer = function(currentPage: number, pageCount: number) { 
-    return { 
-      columns: [
-        { text: `Ngày tạo: ${formatDate(new Date().toISOString())}`, alignment: 'left', style: 'info', margin: [40, 0, 0, 0] },
-        { text: `Trang ${currentPage.toString()} / ${pageCount}`, alignment: 'right', style: 'info', margin: [0, 0, 40, 0] }
-      ]
-    };
-  };
+
+  // Bộ phận Tài chính Kế toán
+  docDefinition.content.push({ text: 'BỘ PHẬN TÀI CHÍNH KẾ TOÁN', style: 'signatureHeader', margin: [0, 20, 0, 5] });
+  docDefinition.content.push({
+    columns: [
+      {
+        stack: [
+          { text: 'Kiểm tra', style: 'signatureText' },
+          { text: 'Kiểm soát ngân sách', italics: true, fontSize: 9, alignment: 'center' },
+          { text: '\n\n\n\n\n' },
+          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
+          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
+        ], width: '*'
+      },
+      {
+        stack: [
+          { text: 'Kiểm tra', style: 'signatureText' },
+          { text: 'Kế toán trưởng', italics: true, fontSize: 9, alignment: 'center' },
+          { text: '\n\n\n\n\n' },
+          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
+          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
+        ], width: '*'
+      },
+      {
+        stack: [
+          { text: 'Xét duyệt', style: 'signatureText' },
+          { text: 'Giám đốc tài chính', italics: true, fontSize: 9, alignment: 'center' },
+          { text: '\n\n\n\n\n' },
+          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
+          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
+        ], width: '*'
+      },
+    ]
+  });
+
+  // Ban Tổng Giám Đốc
+  docDefinition.content.push({
+    text: 'PHÊ DUYỆT CỦA BAN TỔNG GIÁM ĐỐC',
+    style: 'signatureHeader',
+    margin: [0, 20, 0, 5],
+    alignment: 'center'
+  });
+
+  /* ---------- FOOTER ---------- */
+  docDefinition.footer = (currentPage: number, pageCount: number) => ({
+    columns: [
+      { text: `Ngày tạo: ${formatDate(new Date().toISOString())}`, alignment: 'left', style: 'info', margin: [40, 0, 0, 0] },
+      { text: `Trang ${currentPage} / ${pageCount}`, alignment: 'right', style: 'info', margin: [0, 0, 40, 0] }
+    ]
+  });
 
   return docDefinition;
 }
