@@ -1,18 +1,24 @@
-import { pdf } from '@react-pdf/renderer';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+
+// Configure pdfmake to use Roboto font from vfs_fonts (for Unicode support)
+pdfMake.vfs = pdfFonts as any;
+pdfMake.fonts = {
+  Roboto: {
+    normal: 'Roboto-Regular.ttf',
+    bold: 'Roboto-Medium.ttf', // pdfmake's vfs_fonts often uses Medium for Bold
+    italics: 'Roboto-Italic.ttf',
+    bolditalics: 'Roboto-MediumItalic.ttf' // and MediumItalic for BoldItalic
+  }
+};
 import { PaymentRequest } from '../types';
-import { ModernPaymentRequestPDF } from './modernPdf';
-import { SimplePaymentRequestPDF } from './simplePdf';
+import { getModernPaymentRequestDocDefinition } from './modernPdf';
 
 export interface PDFGenerationOptions {
   status?: 'draft' | 'pending' | 'approved' | 'rejected';
   showWatermark?: boolean;
   filename?: string;
-  metadata?: {
-    title?: string;
-    author?: string;
-    subject?: string;
-    keywords?: string[];
-  };
+  // metadata, title, author, subject, keywords were removed as they were not used
 }
 
 export class ModernPDFService {
@@ -29,28 +35,16 @@ export class ModernPDFService {
     } = options;
 
     try {
-      const pdfDocument = ModernPaymentRequestPDF({
-        data,
-        status,
-        showWatermark,
+      const docDefinition = getModernPaymentRequestDocDefinition(data, { status, showWatermark });
+      return await new Promise<Blob>((resolve, reject) => {
+        pdfMake.createPdf(docDefinition).getBlob((blob: Blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Không thể tạo PDF.'));
+        });
       });
-
-      const blob = await pdf(pdfDocument).toBlob();
-      return blob;
     } catch (error) {
       console.error('Error generating modern PDF:', error);
-      
-      // If modern PDF fails (likely font issues), use simple fallback
-      try {
-        console.log('Retrying with simple PDF fallback...');
-        const fallbackDocument = SimplePaymentRequestPDF({ data });
-        
-        const blob = await pdf(fallbackDocument).toBlob();
-        return blob;
-      } catch (fallbackError) {
-        console.error('Fallback PDF generation also failed:', fallbackError);
-        throw new Error('Không thể tạo PDF. Có thể do lỗi font hoặc dữ liệu không hợp lệ.');
-      }
+      throw new Error('Lỗi tạo PDF blob sau khi bắt lỗi nội bộ.');
     }
   }
 

@@ -1,518 +1,135 @@
-import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
-import { PaymentRequest } from '../types';
+import { PaymentRequest, PaymentDetail } from '../types';
+import { TDocumentDefinitions, TableCell } from 'pdfmake/interfaces';
+
+export interface PDFDocOptions {
+  status?: string;
+  showWatermark?: boolean;
+}
 import { formatDate, formatCurrency } from './formatters';
 
-// Use locally bundled fonts to ensure Vietnamese characters render correctly
-import NotoSans400 from '@fontsource/noto-sans/files/noto-sans-latin-ext-400-normal.woff';
-import NotoSans700 from '@fontsource/noto-sans/files/noto-sans-latin-ext-700-normal.woff';
+export function getModernPaymentRequestDocDefinition(
+  data: PaymentRequest,
+  pdfOptions?: PDFDocOptions
+): TDocumentDefinitions {
+  const docDefinition: TDocumentDefinitions = {
+    ...(pdfOptions?.showWatermark && pdfOptions?.status && {
+      watermark: {
+        text: pdfOptions.status.toUpperCase(),
+        color: 'gray',
+        opacity: 0.2,
+        bold: true,
+        italics: false,
+        angle: -45,
+      }
+    }),
+    content: [
+      { text: 'PHIẾU ĐỀ NGHỊ THANH TOÁN', style: 'header', alignment: 'center' },
+      { text: `Số: ${data.so}`, style: 'info' },
+      { text: `Ngày lập: ${formatDate(data.ngay)}`, style: 'info' },
+      data.soPR ? { text: `Số PR: ${data.soPR}`, style: 'info' } : null,
+      { text: `Người đề nghị: ${data.nguoiDeNghi}`, style: 'info' },
+      { text: `Bộ phận: ${data.boPhan}`, style: 'info' },
+      data.nganSach ? { text: `Nguồn ngân sách: ${data.nganSach}`, style: 'info' } : null,
+      data.maKhoanMuc ? { text: `Mã khoản mục: ${data.maKhoanMuc}`, style: 'info' } : null,
+      data.keHoachChi ? { text: `Theo kế hoạch chi: ${data.keHoachChi}`, style: 'info' } : null,
+      { text: 'Nội dung thanh toán:', style: 'subheader', margin: [0, 10, 0, 5] },
+      { text: data.noiDungThanhToan, style: 'paragraph' },
+      { text: `Nhà cung cấp: ${data.nhaCungCap}`, style: 'info', margin: [0, 5, 0, 5] },
+      { text: `Số tiền: ${formatCurrency(data.soTien)}`, style: 'infoAmount' },
+      { text: `(Bằng chữ: ${data.bangChu})`, style: 'infoAmountText' },
+      data.ngayDenHan ? { text: `Ngày đến hạn thanh toán: ${formatDate(data.ngayDenHan)}`, style: 'info' } : null,
+      data.chungTuDinhKem ? { text: `Chứng từ đính kèm: ${data.chungTuDinhKem}`, style: 'info' } : null,
+    ].filter(Boolean), // Remove nulls from optional fields
+    styles: {
+      header: { fontSize: 16, bold: true, margin: [0, 0, 0, 15] },
+      subheader: { fontSize: 13, bold: true, margin: [0, 10, 0, 5] },
+      info: { fontSize: 10, margin: [0, 1, 0, 1] },
+      infoAmount: { fontSize: 11, bold: true, margin: [0, 5, 0, 0] },
+      infoAmountText: { fontSize: 10, italics: true, margin: [0, 0, 0, 10] },
+      paragraph: { fontSize: 10, margin: [0, 0, 0, 5], alignment: 'justify' },
+      tableHeader: { bold: true, fontSize: 9, color: 'black', fillColor: '#eeeeee', alignment: 'center' },
+      tableCell: { fontSize: 8, margin: [2, 2, 2, 2] },
+      tableCellNumber: { fontSize: 8, margin: [2, 2, 2, 2], alignment: 'right' },
+      totalRowCell: { bold: true, fontSize: 9, margin: [2, 2, 2, 2] },
+      totalRowCellAmount: { bold: true, fontSize: 9, margin: [2, 2, 2, 2], alignment: 'right' },
+      signatureText: { fontSize: 10, bold: true, alignment: 'center'},
+      signatureDate: { fontSize: 9, alignment: 'center', margin: [0, 2, 0, 0]},
+    },
+    defaultStyle: {
+      font: 'Roboto',
+      fontSize: 10,
+      lineHeight: 1.2,
+    }
+  };
 
-// Register fonts and fall back to Helvetica if registration fails
-let fontFamilyToUse = 'Helvetica';
+  if (data.chiTiet && data.chiTiet.length > 0) {
+    const tableBody: TableCell[][] = [
+      [
+        { text: 'STT', style: 'tableHeader' },
+        { text: 'Diễn giải', style: 'tableHeader' },
+        { text: 'Số lượng', style: 'tableHeader' },
+        { text: 'Đơn vị', style: 'tableHeader' },
+        { text: 'Đơn giá', style: 'tableHeader' },
+        { text: 'Thành tiền', style: 'tableHeader' },
+      ]
+    ];
 
-try {
-  Font.register({
-    family: 'Noto Sans',
-    fonts: [
-      { src: NotoSans400, fontWeight: 'normal' },
-      { src: NotoSans700, fontWeight: 'bold' }
-    ]
+    data.chiTiet.forEach((item: PaymentDetail) => {
+      tableBody.push([
+        { text: item.stt.toString(), style: 'tableCell', alignment: 'center' },
+        { text: item.dienGiai, style: 'tableCell' },
+        { text: item.soLuong.toLocaleString(), style: 'tableCellNumber' },
+        { text: item.donVi, style: 'tableCell', alignment: 'center' },
+        { text: formatCurrency(item.donGia), style: 'tableCellNumber' },
+        { text: formatCurrency(item.thanhTien), style: 'tableCellNumber' },
+      ]);
+    });
+
+    tableBody.push([
+      { text: '', style: 'tableCell' }, // Empty for STT
+      { text: 'TỔNG CỘNG', style: 'totalRowCell', colSpan: 4, alignment: 'right' },
+      { text: '' }, { text: '' }, { text: '' }, // Empty cells due to colSpan for SL, DV, DonGia
+      { text: formatCurrency(data.soTien), style: 'totalRowCellAmount' },
+    ]);
+
+    docDefinition.content.push({ text: 'Chi tiết thanh toán:', style: 'subheader', margin: [0,15,0,5] });
+    docDefinition.content.push({
+      table: {
+        headerRows: 1,
+        widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto'],
+        body: tableBody,
+      },
+      layout: {
+        hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length || i === 1) ? 0.5 : 0.25,
+        vLineWidth: (i: number, node: any) => (i === 0 || i === node.table.widths.length) ? 0.5 : 0.25,
+        hLineColor: (i: number, node: any) => (i === 0 || i === node.table.body.length || i === 1) ? 'black' : 'gray',
+        vLineColor: (i: number, node: any) => (i === 0 || i === node.table.widths.length) ? 'black' : 'gray',
+        paddingLeft: (_i: number, _node: any) => 4,
+        paddingRight: (_i: number, _node: any) => 4,
+        paddingTop: (_i: number, _node: any) => 3,
+        paddingBottom: (_i: number, _node: any) => 3,
+      }
+    });
+  }
+
+  docDefinition.content.push({
+    columns: [
+      { stack: [{text: 'Người đề nghị', style: 'signatureText'}, {text: '(Ký, họ tên)', italics: true, fontSize: 9, alignment: 'center'}, {text: '\n\n\n\n\n'}, {text: data.nguoiDeNghi, style: 'signatureText'}], width: '*'},
+      { stack: [{text: 'Trưởng bộ phận', style: 'signatureText'}, {text: '(Ký, họ tên)', italics: true, fontSize: 9, alignment: 'center'}, {text: '\n\n\n\n\n'}, {text: '.........................', style: 'signatureText'}], width: '*'},
+      { stack: [{text: 'Giám đốc', style: 'signatureText'}, {text: '(Ký, họ tên)', italics: true, fontSize: 9, alignment: 'center'}, {text: '\n\n\n\n\n'}, {text: '.........................', style: 'signatureText'}], width: '*'},
+    ],
+    margin: [0, 30, 0, 0] // Add margin before signature section
   });
-  fontFamilyToUse = 'Noto Sans';
-} catch (error) {
-  console.warn('Failed to register Noto Sans, falling back to Helvetica:', error);
+  
+  // Add footer with page numbers
+  docDefinition.footer = function(currentPage: number, pageCount: number) { 
+    return { 
+      columns: [
+        { text: `Ngày tạo: ${formatDate(new Date().toISOString())}`, alignment: 'left', style: 'info', margin: [40, 0, 0, 0] },
+        { text: `Trang ${currentPage.toString()} / ${pageCount}`, alignment: 'right', style: 'info', margin: [0, 0, 40, 0] }
+      ]
+    };
+  };
+
+  return docDefinition;
 }
-
-const modernStyles = StyleSheet.create({
-  page: {
-    padding: 40,
-    fontFamily: fontFamilyToUse,
-    fontSize: 12,
-    lineHeight: 1.6,
-    color: '#1f2937',
-    backgroundColor: '#ffffff',
-  },
-  
-  // Header styles
-  header: {
-    marginBottom: 40,
-    paddingBottom: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: '#3b82f6',
-    borderBottomStyle: 'solid',
-  },
-  
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#1e40af',
-    marginBottom: 8,
-    fontFamily: fontFamilyToUse,
-  },
-  
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#6b7280',
-    fontStyle: 'italic',
-  },
-  
-  // Document info section
-  documentInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 30,
-    padding: 15,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  
-  documentInfoLeft: {
-    flex: 1,
-  },
-  
-  documentInfoRight: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  
-  // Section styles
-  section: {
-    marginBottom: 25,
-    padding: 20,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 15,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#d1d5db',
-    fontFamily: fontFamilyToUse,
-  },
-  
-  // Field styles
-  fieldRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'flex-start',
-  },
-  
-  fieldLabel: {
-    width: 180,
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#4b5563',
-    paddingRight: 15,
-  },
-  
-  fieldValue: {
-    flex: 1,
-    fontSize: 12,
-    color: '#1f2937',
-    lineHeight: 1.5,
-  },
-  
-  // Special field styles
-  amountField: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#059669',
-    textAlign: 'right',
-    fontFamily: fontFamilyToUse,
-  },
-  
-  currencyText: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-  
-  // Table styles
-  table: {
-    marginTop: 15,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#d1d5db',
-  },
-  
-  tableHeaderCell: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#374151',
-    textAlign: 'center',
-    fontFamily: fontFamilyToUse,
-  },
-  
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  
-  tableCell: {
-    fontSize: 10,
-    color: '#1f2937',
-    textAlign: 'center',
-  },
-  
-  // Column widths for table
-  col1: { width: '8%' },   // STT
-  col2: { width: '35%' },  // Diễn giải
-  col3: { width: '12%' },  // Số lượng
-  col4: { width: '15%' },  // Đơn vị
-  col5: { width: '15%' },  // Đơn giá
-  col6: { width: '15%' },  // Thành tiền
-  
-  // Footer styles
-  footer: {
-    marginTop: 40,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  
-  footerLeft: {
-    fontSize: 10,
-    color: '#6b7280',
-  },
-  
-  footerRight: {
-    fontSize: 10,
-    color: '#6b7280',
-    textAlign: 'right',
-  },
-  
-  // Signature section
-  signatureSection: {
-    marginTop: 40,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  
-  signatureBox: {
-    width: '30%',
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  
-  signatureTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  
-  signatureLine: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#d1d5db',
-    marginBottom: 8,
-  },
-  
-  signatureDate: {
-    fontSize: 10,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  
-  // Status badge
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#dbeafe',
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  
-  statusText: {
-    fontSize: 10,
-    color: '#1e40af',
-    fontWeight: 'bold',
-    fontFamily: fontFamilyToUse,
-  },
-  
-  // Watermark
-  watermark: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%) rotate(-45deg)',
-    fontSize: 60,
-    color: '#f3f4f6',
-    fontWeight: 'bold',
-    opacity: 0.1,
-    zIndex: -1,
-  },
-});
-
-interface ModernPaymentRequestPDFProps {
-  data: PaymentRequest;
-  showWatermark?: boolean;
-  status?: 'draft' | 'pending' | 'approved' | 'rejected';
-}
-
-export function ModernPaymentRequestPDF({ 
-  data, 
-  showWatermark = false, 
-  status = 'draft' 
-}: ModernPaymentRequestPDFProps) {
-  const currentDate = new Date().toISOString();
-  
-  return (
-    <Document
-      title={`Phiếu Đề Nghị Thanh Toán - ${data.so || 'Draft'}`}
-      author={data.nguoiDeNghi}
-      subject="Payment Request"
-      keywords="payment,request,vietnamese,finance"
-      creator="Modern Payment System"
-      producer="React-PDF"
-    >
-      <Page size="A4" style={modernStyles.page}>
-        {/* Watermark */}
-        {showWatermark && (
-          <Text style={modernStyles.watermark}>
-            {status.toUpperCase()}
-          </Text>
-        )}
-        
-        {/* Header */}
-        <View style={modernStyles.header}>
-          <Text style={modernStyles.title}>
-            PHIẾU ĐỀ NGHỊ THANH TOÁN
-          </Text>
-          <Text style={modernStyles.subtitle}>
-            Payment Request Form
-          </Text>
-        </View>
-        
-        {/* Document Info */}
-        <View style={modernStyles.documentInfo}>
-          <View style={modernStyles.documentInfoLeft}>
-            <View style={modernStyles.fieldRow}>
-              <Text style={modernStyles.fieldLabel}>Số phiếu:</Text>
-              <Text style={modernStyles.fieldValue}>{data.so || 'Chưa có số'}</Text>
-            </View>
-            <View style={modernStyles.fieldRow}>
-              <Text style={modernStyles.fieldLabel}>Ngày tạo:</Text>
-              <Text style={modernStyles.fieldValue}>{formatDate(data.ngay)}</Text>
-            </View>
-            {data.soPR && (
-              <View style={modernStyles.fieldRow}>
-                <Text style={modernStyles.fieldLabel}>Số PR:</Text>
-                <Text style={modernStyles.fieldValue}>{data.soPR}</Text>
-              </View>
-            )}
-          </View>
-          <View style={modernStyles.documentInfoRight}>
-            <View style={modernStyles.statusBadge}>
-              <Text style={modernStyles.statusText}>
-                {status === 'draft' && 'BẢN NHÁP'}
-                {status === 'pending' && 'CHỜ DUYỆT'}
-                {status === 'approved' && 'ĐÃ DUYỆT'}
-                {status === 'rejected' && 'TỪ CHỐI'}
-              </Text>
-            </View>
-          </View>
-        </View>
-        
-        {/* Requester Information */}
-        <View style={modernStyles.section}>
-          <Text style={modernStyles.sectionTitle}>
-            Thông tin người đề nghị
-          </Text>
-          <View style={modernStyles.fieldRow}>
-            <Text style={modernStyles.fieldLabel}>Họ và tên:</Text>
-            <Text style={modernStyles.fieldValue}>{data.nguoiDeNghi}</Text>
-          </View>
-          <View style={modernStyles.fieldRow}>
-            <Text style={modernStyles.fieldLabel}>Bộ phận:</Text>
-            <Text style={modernStyles.fieldValue}>{data.boPhan}</Text>
-          </View>
-          {data.nganSach && (
-            <View style={modernStyles.fieldRow}>
-              <Text style={modernStyles.fieldLabel}>Ngân sách sử dụng:</Text>
-              <Text style={modernStyles.fieldValue}>{data.nganSach}</Text>
-            </View>
-          )}
-          {data.maKhoanMuc && (
-            <View style={modernStyles.fieldRow}>
-              <Text style={modernStyles.fieldLabel}>Mã khoản mục NS:</Text>
-              <Text style={modernStyles.fieldValue}>{data.maKhoanMuc}</Text>
-            </View>
-          )}
-          {data.keHoachChi && (
-            <View style={modernStyles.fieldRow}>
-              <Text style={modernStyles.fieldLabel}>Kế hoạch chi:</Text>
-              <Text style={modernStyles.fieldValue}>{data.keHoachChi}</Text>
-            </View>
-          )}
-        </View>
-        
-        {/* Payment Information */}
-        <View style={modernStyles.section}>
-          <Text style={modernStyles.sectionTitle}>
-            Thông tin thanh toán
-          </Text>
-          <View style={modernStyles.fieldRow}>
-            <Text style={modernStyles.fieldLabel}>Nội dung thanh toán:</Text>
-            <Text style={modernStyles.fieldValue}>{data.noiDungThanhToan}</Text>
-          </View>
-          <View style={modernStyles.fieldRow}>
-            <Text style={modernStyles.fieldLabel}>Nhà thầu/NCC/Đối tác:</Text>
-            <Text style={modernStyles.fieldValue}>{data.nhaCungCap}</Text>
-          </View>
-          <View style={modernStyles.fieldRow}>
-            <Text style={modernStyles.fieldLabel}>Số tiền:</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={modernStyles.amountField}>
-                {formatCurrency(data.soTien)}
-              </Text>
-              <Text style={modernStyles.currencyText}>
-                Bằng chữ: {data.bangChu}
-              </Text>
-            </View>
-          </View>
-          {data.ngayDenHan && (
-            <View style={modernStyles.fieldRow}>
-              <Text style={modernStyles.fieldLabel}>Ngày đến hạn:</Text>
-              <Text style={modernStyles.fieldValue}>{formatDate(data.ngayDenHan)}</Text>
-            </View>
-          )}
-          {data.chungTuDinhKem && (
-            <View style={modernStyles.fieldRow}>
-              <Text style={modernStyles.fieldLabel}>Chứng từ đính kèm:</Text>
-              <Text style={modernStyles.fieldValue}>{data.chungTuDinhKem}</Text>
-            </View>
-          )}
-        </View>
-        
-        {/* Payment Details Table */}
-        {data.chiTiet && data.chiTiet.length > 0 && (
-          <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>
-              Chi tiết thanh toán
-            </Text>
-            <View style={modernStyles.table}>
-              {/* Table Header */}
-              <View style={modernStyles.tableHeader}>
-                <Text style={[modernStyles.tableHeaderCell, modernStyles.col1]}>STT</Text>
-                <Text style={[modernStyles.tableHeaderCell, modernStyles.col2]}>Diễn giải</Text>
-                <Text style={[modernStyles.tableHeaderCell, modernStyles.col3]}>Số lượng</Text>
-                <Text style={[modernStyles.tableHeaderCell, modernStyles.col4]}>Đơn vị</Text>
-                <Text style={[modernStyles.tableHeaderCell, modernStyles.col5]}>Đơn giá</Text>
-                <Text style={[modernStyles.tableHeaderCell, modernStyles.col6]}>Thành tiền</Text>
-              </View>
-              
-              {/* Table Rows */}
-              {data.chiTiet.map((item, index) => (
-                <View key={index} style={modernStyles.tableRow}>
-                  <Text style={[modernStyles.tableCell, modernStyles.col1]}>{item.stt}</Text>
-                  <Text style={[modernStyles.tableCell, modernStyles.col2, { textAlign: 'left' }]}>
-                    {item.dienGiai}
-                  </Text>
-                  <Text style={[modernStyles.tableCell, modernStyles.col3]}>
-                    {item.soLuong.toLocaleString()}
-                  </Text>
-                  <Text style={[modernStyles.tableCell, modernStyles.col4]}>{item.donVi}</Text>
-                  <Text style={[modernStyles.tableCell, modernStyles.col5]}>
-                    {formatCurrency(item.donGia)}
-                  </Text>
-                  <Text style={[modernStyles.tableCell, modernStyles.col6]}>
-                    {formatCurrency(item.thanhTien)}
-                  </Text>
-                </View>
-              ))}
-              
-              {/* Total Row */}
-              <View style={[modernStyles.tableRow, { backgroundColor: '#f9fafb' }]}>
-                <Text style={[modernStyles.tableCell, modernStyles.col1]}></Text>
-                <Text style={[modernStyles.tableCell, modernStyles.col2, { fontWeight: 'bold', textAlign: 'right' }]}>
-                  TỔNG CỘNG:
-                </Text>
-                <Text style={[modernStyles.tableCell, modernStyles.col3]}></Text>
-                <Text style={[modernStyles.tableCell, modernStyles.col4]}></Text>
-                <Text style={[modernStyles.tableCell, modernStyles.col5]}></Text>
-                <Text style={[modernStyles.tableCell, modernStyles.col6, { fontWeight: 'bold', color: '#059669' }]}>
-                  {formatCurrency(data.soTien)}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-        
-        {/* Signature Section */}
-        <View style={modernStyles.signatureSection}>
-          <View style={modernStyles.signatureBox}>
-            <Text style={modernStyles.signatureTitle}>Người đề nghị</Text>
-            <View style={modernStyles.signatureLine} />
-            <Text style={modernStyles.signatureDate}>
-              Ngày: {formatDate(currentDate)}
-            </Text>
-          </View>
-          
-          <View style={modernStyles.signatureBox}>
-            <Text style={modernStyles.signatureTitle}>Trưởng bộ phận</Text>
-            <View style={modernStyles.signatureLine} />
-            <Text style={modernStyles.signatureDate}>
-              Ngày: ___________
-            </Text>
-          </View>
-          
-          <View style={modernStyles.signatureBox}>
-            <Text style={modernStyles.signatureTitle}>Phòng Tài chính</Text>
-            <View style={modernStyles.signatureLine} />
-            <Text style={modernStyles.signatureDate}>
-              Ngày: ___________
-            </Text>
-          </View>
-        </View>
-        
-        {/* Footer */}
-        <View style={modernStyles.footer}>
-          <View style={modernStyles.footerLeft}>
-            <Text>Tạo bởi: Hệ thống quản lý thanh toán</Text>
-            <Text>Phiên bản: 2.0 - Modern PDF Engine</Text>
-          </View>
-          <View style={modernStyles.footerRight}>
-            <Text>Ngày tạo: {formatDate(currentDate)}</Text>
-            <Text>Trang 1/1</Text>
-          </View>
-        </View>
-      </Page>
-    </Document>
-  );
-} 
