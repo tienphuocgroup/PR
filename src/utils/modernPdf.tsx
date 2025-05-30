@@ -3,28 +3,24 @@ import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/
 import { PaymentRequest } from '../types';
 import { formatDate, formatCurrency } from './formatters';
 
-// Register fonts with built-in fallback
-let fontFamilyToUse = 'Helvetica'; // Default to built-in font
+// Use locally bundled fonts to ensure Vietnamese characters render correctly
+import NotoSans400 from '@fontsource/noto-sans/files/noto-sans-latin-ext-400-normal.woff';
+import NotoSans700 from '@fontsource/noto-sans/files/noto-sans-latin-ext-700-normal.woff';
+
+// Register fonts and fall back to Helvetica if registration fails
+let fontFamilyToUse = 'Helvetica';
 
 try {
-  // Try to register Noto Sans
   Font.register({
     family: 'Noto Sans',
     fonts: [
-      {
-        src: 'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRA.woff2',
-        fontWeight: 'normal',
-      },
-      {
-        src: 'https://fonts.gstatic.com/s/notosans/v30/o-0NIpQlx3QUlC5A4PNjXhFlY9aA.woff2',
-        fontWeight: 'bold',
-      },
-    ],
+      { src: NotoSans400, fontWeight: 'normal' },
+      { src: NotoSans700, fontWeight: 'bold' }
+    ]
   });
   fontFamilyToUse = 'Noto Sans';
-  console.log('Noto Sans fonts registered successfully');
 } catch (error) {
-  console.warn('Using Helvetica fallback font:', error);
+  console.warn('Failed to register Noto Sans, falling back to Helvetica:', error);
 }
 
 const modernStyles = StyleSheet.create({
