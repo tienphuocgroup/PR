@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, FileText } from 'lucide-react';
@@ -49,7 +49,7 @@ export function PaymentRequestForm() {
     defaultValues
   });
 
-  const { handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = form;
+  const { handleSubmit, watch, setValue, reset, formState: { isSubmitting } } = form;
   const soTien = watch('soTien');
   const watchedData = watch(); // Watch all form data for PDF generation
 
@@ -74,6 +74,56 @@ export function PaymentRequestForm() {
       setValue('bangChu', '');
     }
   }, [soTien, setValue]);
+
+  const [jsonInput, setJsonInput] = useState('');
+
+  const handleApplyJson = () => {
+    if (!jsonInput.trim()) {
+      alert('Vui lòng nhập dữ liệu JSON.');
+      return;
+    }
+    try {
+      const parsedJson = JSON.parse(jsonInput);
+      if (!Array.isArray(parsedJson)) {
+        alert('Dữ liệu JSON đầu vào phải là một mảng (array).');
+        return;
+      }
+
+      const newDetails = parsedJson.map((item: any, index: number) => {
+        if (
+          typeof item.description !== 'string' ||
+          typeof item.quantity !== 'number' ||
+          item.quantity <= 0 ||
+          typeof item.amount !== 'number' ||
+          item.amount < 0
+        ) {
+          throw new Error(
+            `Mục không hợp lệ ở vị trí ${index + 1}: \"description\" (chuỗi), \"quantity\" (số dương), \"amount\" (số không âm) là bắt buộc.`
+          );
+        }
+
+        return {
+          stt: index + 1,
+          dienGiai: item.description,
+          soLuong: item.quantity,
+          donVi: item.donVi || 'Post', // Allow "donVi" from JSON or default to "Post"
+          donGia: item.quantity !== 0 ? item.amount / item.quantity : 0,
+          thanhTien: item.amount,
+        };
+      });
+
+      setValue('chiTiet', newDetails, { shouldValidate: true, shouldDirty: true });
+
+      const totalAmount = newDetails.reduce((sum, detail) => sum + (detail.thanhTien || 0), 0);
+      setValue('soTien', totalAmount, { shouldValidate: true, shouldDirty: true });
+
+      alert('Bảng chi tiết đã được cập nhật thành công từ JSON!');
+      // setJsonInput(''); // Optionally clear input, or leave for re-editing
+    } catch (error) {
+      console.error('Lỗi xử lý JSON:', error);
+      alert(`Lỗi xử lý JSON: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
 
   const onSubmit = async (data: PaymentRequest) => {
     try {
@@ -221,6 +271,30 @@ export function PaymentRequestForm() {
                 name="chungTuDinhKem"
                 label="Chứng từ đính kèm"
               />
+            </div>
+
+            {/* JSON Input for Payment Details */}
+            <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-slate-50 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                Nhập chi tiết từ JSON
+              </h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Dán nội dung JSON vào ô bên dưới để tự động điền bảng chi tiết. Mỗi mục trong JSON sẽ tạo một hàng mới.
+              </p>
+              <textarea
+                className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono placeholder-gray-400"
+                rows={10}
+                placeholder={'[\n  {\n    "description": "Tên sản phẩm/dịch vụ",\n    "quantity": 1,\n    "unit_price": 100000, // Giá đơn vị (có thể là ngoại tệ nếu amount là VND tương ứng)\n    "currency": "VND",   // Đơn vị tiền tệ của unit_price (ví dụ: \"USD\", \"VND\")\n    "amount": 100000,   // Tổng tiền cuối cùng bằng VND cho mục này\n    "donVi": "Cái"      // (Tùy chọn) Đơn vị tính, ví dụ: Cái, Gói, Lần\n  },\n  {\n    "description": "Sản phẩm khác",\n    "quantity": 2,\n    "unit_price": 25.50,\n    "currency": "USD",\n    "amount": 1200000, // = 2 * 25.50 USD * tỷ giá (ví dụ)\n    "donVi": "Tháng"\n  }\n  // ... thêm các mục khác nếu cần\n]'}
+                value={jsonInput}
+                onChange={(e) => setJsonInput(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={handleApplyJson}
+                className="mt-3 inline-flex items-center justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 ease-in-out"
+              >
+                Áp dụng JSON vào bảng chi tiết
+              </button>
             </div>
 
             {/* Payment Details Table */}
