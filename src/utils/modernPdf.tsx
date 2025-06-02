@@ -34,7 +34,7 @@ export function getModernPaymentRequestDocDefinition(
                 style: 'tpgLogo',
                 rowSpan: 2,
                 alignment: 'center',
-                margin: [0, 15, 0, 0] // Vertical alignment for TPG logo
+                margin: [0, 8, 0, 0] // Vertical alignment for TPG logo
               },
               {
                 text: 'CÔNG TY CỔ PHẦN TẬP ĐOÀN TIẾN PHƯỚC',
@@ -57,7 +57,7 @@ export function getModernPaymentRequestDocDefinition(
                   paddingTop: () => 0, paddingBottom: () => 0, paddingLeft: () => 2, paddingRight: () => 2,
                 },
                 rowSpan: 2,
-                margin: [0, 5, 0, 0] // Align this block slightly lower to match company name/title block
+                margin: [0, 2, 0, 0] // Align this block slightly lower to match company name/title block
               }
             ],
             [
@@ -76,13 +76,13 @@ export function getModernPaymentRequestDocDefinition(
           vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length || (i > 0 && i < node.table.widths.length)) ? 0.5 : 0,
           hLineColor: () => 'black',
           vLineColor: () => 'black',
-          paddingTop: () => 2, paddingBottom: () => 2, paddingLeft: () => 4, paddingRight: () => 4,
+          paddingTop: () => 1, paddingBottom: () => 1, paddingLeft: () => 4, paddingRight: () => 4,
         }
       },
       // Line separator after main header block
       {
-        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 0.5, lineColor: 'black' }],
-        margin: [0, 0, 0, 2] // Minimal margin after the line
+        canvas: [{ type: 'line', x1: 0, y1: 2, x2: 515, y2: 2, lineWidth: 0.5, lineColor: 'black' }],
+        margin: [0, 0, 0, 1] // Minimal margin after the line
       },
       // Số, Ngày, Số PR, Nợ, Có block
       {
@@ -110,12 +110,12 @@ export function getModernPaymentRequestDocDefinition(
           ]
         },
         layout: 'noBorders',
-        margin: [0, 3, 0, 3]
+        margin: [0, 1, 0, 1]
       },
       // Line separator after Số/Ngày/PR block, before PAYMENT METHOD
       {
-        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 0.5, lineColor: '#999999' }],
-        margin: [0, 0, 0, 10]
+        canvas: [{ type: 'line', x1: 0, y1: 2, x2: 515, y2: 2, lineWidth: 0.5, lineColor: '#999999' }],
+        margin: [0, 0, 0, 4]
       },
 
       /* ---------- PAYMENT METHOD ---------- */
@@ -124,13 +124,13 @@ export function getModernPaymentRequestDocDefinition(
           { text: '☐ Tiền mặt', style: 'checkbox' },
           { text: '☐ Chuyển khoản', style: 'checkbox' }
         ],
-        margin: [0, 5, 0, 5]
+        margin: [0, 2, 0, 2]
       },
       {
         canvas: [
           { type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.75, lineColor: '#999999' }
         ],
-        margin: [0, 6, 0, 10]
+        margin: [0, 2, 0, 4]
       },
 
       /* ---------- FORM FIELDS ---------- */
@@ -139,37 +139,40 @@ export function getModernPaymentRequestDocDefinition(
       { text: `3. Ngân sách sử dụng: ☐ Ngân sách hoạt động   ☐ Ngân sách Dự Án   Mã khoản mục ngân sách: ${data.maKhoanMuc || ''}`, style: 'paragraph' },
       { text: `4. Kế hoạch chi hàng tháng: ☐ Trong kế hoạch Chi   ☐ Ngoài kế hoạch Chi`, style: 'paragraph' },
       { text: '5. Nội dung thanh toán:', style: 'paragraph' },
-      { text: data.noiDungThanhToan, style: 'paragraph', margin: [15, 0, 0, 5] },
+      { text: data.noiDungThanhToan, style: 'paragraph', margin: [15, 0, 0, 2] },
       { text: `6. Nhà thầu/ nhà cung cấp/ Đối tác: ${data.nhaCungCap || ''}`, style: 'paragraph' },
       { text: `7. Số tiền thanh toán: ${formatCurrency(data.soTien)}`, style: 'paragraph' },
     ],
 
     /* ---------- STYLES ---------- */
     styles: {
-      // header: { fontSize: 16, bold: true, margin: [0, 0, 0, 15] }, // Original header style, commented out
-      tpgLogo: { fontSize: 36, bold: true, alignment: 'center' }, // For "TPG"
-      companyName: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 1] }, // For "CÔNG TY CỔ PHẦN TẬP ĐOÀN TIẾN PHƯỚC"
-      documentTitle: { fontSize: 13, bold: true, alignment: 'center', margin: [0, 1, 0, 0] }, // For "PHIẾU ĐỀ NGHỊ THANH TOÁN"
-      infoLabelSmall: { fontSize: 8, bold: false, margin: [0,0.5,0,0.5] }, // For labels like "Mã tài liệu"
-      infoValueSmall: { fontSize: 8, bold: false, margin: [0,0.5,0,0.5], alignment: 'left' }, // For values like "F_QP_M05_01" (not bold in image)
-      info: { fontSize: 10, margin: [0, 2, 0, 2] }, // Adjusted existing info style for Số/Ngày/PR
-      subheader: { fontSize: 13, bold: true, margin: [0, 10, 0, 5] },
-      info: { fontSize: 10, margin: [0, 1, 0, 1] },
-      infoAmount: { fontSize: 11, bold: true, margin: [0, 5, 0, 0] },
-      infoAmountText: { fontSize: 10, italics: true, margin: [0, 0, 0, 10] },
-      paragraph: { fontSize: 10, margin: [0, 0, 0, 5], alignment: 'justify' },
+      tpgLogo: { fontSize: 36, bold: true, alignment: 'center' },
+      companyName: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 0.5] },
+      documentTitle: { fontSize: 13, bold: true, alignment: 'center', margin: [0, 0.5, 0, 0] },
+      infoLabelSmall: { fontSize: 8, bold: false, margin: [0,0.2,0,0.2] },
+      infoValueSmall: { fontSize: 8, bold: false, margin: [0,0.2,0,0.2], alignment: 'left' },
+      subheader: { fontSize: 13, bold: true, margin: [0, 5, 0, 2] }, // Reduced for 'Chi tiet thanh toan'
+      info: { fontSize: 10, margin: [0, 0.5, 0, 0.5] }, // Used for Số/Ngày/PR and potentially old footer
+      infoAmount: { fontSize: 11, bold: true, margin: [0, 2, 0, 0] },
+      infoAmountText: { fontSize: 10, italics: true, margin: [0, 0, 0, 4] },
+      paragraph: { fontSize: 10, margin: [0, 0, 0, 2], alignment: 'justify' },
       tableHeader: { bold: true, fontSize: 9, fillColor: '#eeeeee', alignment: 'center' },
-      tableCell: { fontSize: 8, margin: [2, 2, 2, 2] },
-      tableCellNumber: { fontSize: 8, margin: [2, 2, 2, 2], alignment: 'right' },
-      totalRowCell: { bold: true, fontSize: 9, margin: [2, 2, 2, 2] },
-      totalRowCellAmount: { bold: true, fontSize: 9, margin: [2, 2, 2, 2], alignment: 'right' },
-      signatureText: { fontSize: 10, bold: true, alignment: 'center' },
-      signatureDate: { fontSize: 9, alignment: 'center', margin: [0, 2, 0, 0] },
-      checkbox: { fontSize: 10, margin: [0, 1, 0, 1] },
-      signatureHeader: { fontSize: 11, bold: true, alignment: 'center' },
+      tableCell: { fontSize: 8, margin: [2, 1, 2, 1] },
+      tableCellNumber: { fontSize: 8, margin: [2, 1, 2, 1], alignment: 'right' },
+      totalRowCell: { bold: true, fontSize: 9, margin: [2, 1, 2, 1] },
+      totalRowCellAmount: { bold: true, fontSize: 9, margin: [2, 1, 2, 1], alignment: 'right' },
+      checkbox: { fontSize: 10, margin: [0, 0.5, 0, 0.5] },
+
+      // New styles for the signature section
+      sigSectionHeader: { fontSize: 9, bold: true, alignment: 'left', fillColor: '#EFEFEF', margin: [2,1,2,1] },
+      sigTitle: { fontSize: 9, bold: true, alignment: 'center', margin: [0, 1, 0, 0.5] },
+      sigSubTitle: { fontSize: 8, italics: true, alignment: 'center', margin: [0, 0.5, 0, 1] },
+      sigActionText: { fontSize: 8, alignment: 'center', margin: [0, 0.5, 0, 0.5] },
+      sigFinalApprovalHeader: { fontSize: 9, bold: true, alignment: 'center', fillColor: '#EFEFEF', margin: [2,1,2,1] },
+      sigFinalDateText: { fontSize: 8, alignment: 'center', margin: [0, 2, 0, 0] }
     },
 
-    defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.2 }
+    defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.1 }
   };
 
   /* ---------- DETAIL TABLE (if any) ---------- */
@@ -195,7 +198,7 @@ export function getModernPaymentRequestDocDefinition(
       { text: formatCurrency(data.soTien), style: 'totalRowCellAmount' },
     ]);
 
-    docDefinition.content.push({ text: 'Chi tiết thanh toán:', style: 'subheader', margin: [0, 15, 0, 5] });
+    docDefinition.content.push({ text: 'Chi tiết thanh toán:', style: 'subheader', margin: [0, 8, 0, 2] });
     docDefinition.content.push({
       table: {
         headerRows: 1,
@@ -207,7 +210,7 @@ export function getModernPaymentRequestDocDefinition(
         vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length) ? 0.5 : 0.25,
         hLineColor: (i, node) => (i === 0 || i === node.table.body.length || i === 1) ? 'black' : 'gray',
         vLineColor: (i, node) => (i === 0 || i === node.table.widths.length) ? 'black' : 'gray',
-        paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 3, paddingBottom: () => 3,
+        paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 1, paddingBottom: () => 1,
         fillColor: (rowIndex: number) =>
           rowIndex === 0
             ? '#eeeeee'             // header row (already styled)
@@ -218,81 +221,131 @@ export function getModernPaymentRequestDocDefinition(
     });
   }
 
-  /* ---------- SIGNATURE SECTIONS ---------- */
-  // Bộ phận đề nghị
-  docDefinition.content.push({ text: 'BỘ PHẬN ĐỀ NGHỊ', style: 'signatureHeader', margin: [0, 20, 0, 5] });
+  // New Signature Section using tables
+  (docDefinition.content as any[]).push({ text: '', margin: [0, 5, 0, 0] }); // Add a small top margin before signature blocks
+
+  // Table 1: BỘ PHẬN ĐỀ NGHỊ
   docDefinition.content.push({
-    columns: [
-      {
-        stack: [
-          { text: 'Lập phiếu', style: 'signatureText' },
-          { text: 'Nhân viên bộ phận', italics: true, fontSize: 9, alignment: 'center' },
-          { text: '\n\n\n\n\n' },
-          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
-          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
-        ], width: '*'
-      },
-      {
-        stack: [
-          { text: 'Kiểm tra/ Xét duyệt', style: 'signatureText' },
-          { text: 'Phụ trách Bộ Phận/Khối', italics: true, fontSize: 9, alignment: 'center' },
-          { text: '\n\n\n\n\n' },
-          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
-          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
-        ], width: '*'
-      },
-    ]
+    table: {
+      widths: ['50%', '50%'],
+      body: [
+        [
+          { text: 'BỘ PHẬN ĐỀ NGHỊ', style: 'sigSectionHeader', colSpan: 2, alignment: 'left' }, {}
+        ],
+        [
+          {
+            stack: [
+              { text: 'Lập phiếu', style: 'sigTitle' },
+              { text: 'Nhân viên bộ phận', style: 'sigSubTitle' },
+              { text: '\n\n', style: 'sigSubTitle' }, // Spacer for signature
+              { text: 'Ký và ghi rõ họ tên', style: 'sigActionText' },
+              { text: 'Ngày ...../...../.....', style: 'sigActionText' }
+            ],
+            margin: [0,1,0,1] // Cell content margin
+          },
+          {
+            stack: [
+              { text: 'Kiểm tra/ Xét duyệt', style: 'sigTitle' },
+              { text: 'Phụ trách Bộ Phận/ Khối', style: 'sigSubTitle' },
+              { text: '\n\n', style: 'sigSubTitle' },
+              { text: 'Ký và ghi rõ họ tên', style: 'sigActionText' },
+              { text: 'Ngày ...../...../.....', style: 'sigActionText' }
+            ],
+            margin: [0,1,0,1]
+          }
+        ]
+      ]
+    },
+    layout: {
+      hLineWidth: (i: number, node: { table: { body: any[] } }) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.25,
+      vLineWidth: (i: number, node: { table: { widths: any[] } }) => (i === 0 || i === node.table.widths.length) ? 0.5 : 0.25,
+      hLineColor: () => 'black',
+      vLineColor: () => 'black',
+      paddingTop: () => 1, paddingBottom: () => 1, paddingLeft: () => 1, paddingRight: () => 1,
+    },
+    margin: [0, 0, 0, 5] // Margin below this table
   });
 
-  // Bộ phận Tài chính Kế toán
-  docDefinition.content.push({ text: 'BỘ PHẬN TÀI CHÍNH KẾ TOÁN', style: 'signatureHeader', margin: [0, 20, 0, 5] });
-  docDefinition.content.push({
-    columns: [
-      {
-        stack: [
-          { text: 'Kiểm tra', style: 'signatureText' },
-          { text: 'Kiểm soát ngân sách', italics: true, fontSize: 9, alignment: 'center' },
-          { text: '\n\n\n\n\n' },
-          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
-          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
-        ], width: '*'
-      },
-      {
-        stack: [
-          { text: 'Kiểm tra', style: 'signatureText' },
-          { text: 'Kế toán trưởng', italics: true, fontSize: 9, alignment: 'center' },
-          { text: '\n\n\n\n\n' },
-          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
-          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
-        ], width: '*'
-      },
-      {
-        stack: [
-          { text: 'Xét duyệt', style: 'signatureText' },
-          { text: 'Giám đốc tài chính', italics: true, fontSize: 9, alignment: 'center' },
-          { text: '\n\n\n\n\n' },
-          { text: 'Ký và ghi rõ họ tên', italics: true, fontSize: 9, alignment: 'center' },
-          { text: 'Ngày ...../...../.....', italics: true, fontSize: 9, alignment: 'center' }
-        ], width: '*'
-      },
-    ]
+  // Table 2: BỘ PHẬN TÀI CHÍNH KẾ TOÁN
+  (docDefinition.content as any[]).push({
+    table: {
+      widths: ['33.33%', '33.33%', '33.34%'],
+      body: [
+        [
+          { text: 'BỘ PHẬN TÀI CHÍNH KẾ TOÁN', style: 'sigSectionHeader', colSpan: 3, alignment: 'left' }, {}, {}
+        ],
+        [
+          {
+            stack: [
+              { text: 'Kiểm tra', style: 'sigTitle' },
+              { text: 'Kiểm soát ngân sách', style: 'sigSubTitle' },
+              { text: '\n\n', style: 'sigSubTitle' },
+              { text: 'Ký và ghi rõ họ tên', style: 'sigActionText' },
+              { text: 'Ngày ...../...../.....', style: 'sigActionText' }
+            ],
+            margin: [0,1,0,1]
+          },
+          {
+            stack: [
+              { text: 'Kiểm tra', style: 'sigTitle' },
+              { text: 'Kế toán trưởng', style: 'sigSubTitle' },
+              { text: '\n\n', style: 'sigSubTitle' },
+              { text: 'Ký và ghi rõ họ tên', style: 'sigActionText' },
+              { text: 'Ngày ...../...../.....', style: 'sigActionText' }
+            ],
+            margin: [0,1,0,1]
+          },
+          {
+            stack: [
+              { text: 'Xét duyệt', style: 'sigTitle' },
+              { text: 'Giám đốc tài chính', style: 'sigSubTitle' },
+              { text: '\n\n', style: 'sigSubTitle' },
+              { text: 'Ký và ghi rõ họ tên', style: 'sigActionText' },
+              { text: 'Ngày ...../...../.....', style: 'sigActionText' }
+            ],
+            margin: [0,1,0,1]
+          }
+        ]
+      ]
+    },
+    layout: {
+      hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.25,
+      vLineWidth: (i: number, node: any) => (i === 0 || i === node.table.widths.length) ? 0.5 : 0.25,
+      hLineColor: () => 'black',
+      vLineColor: () => 'black',
+      paddingTop: () => 1, paddingBottom: () => 1, paddingLeft: () => 1, paddingRight: () => 1,
+    },
+    margin: [0, 0, 0, 5] // Margin below this table
   });
 
-  // Ban Tổng Giám Đốc
-  docDefinition.content.push({
-    text: 'PHÊ DUYỆT CỦA BAN TỔNG GIÁM ĐỐC',
-    style: 'signatureHeader',
-    margin: [0, 20, 0, 5],
-    alignment: 'center'
+  // Table 3: PHÊ DUYỆT CỦA BAN TỔNG GIÁM ĐỐC
+  (docDefinition.content as any[]).push({
+    table: {
+      widths: ['*'],
+      body: [
+        [
+          { text: 'PHÊ DUYỆT CỦA BAN TỔNG GIÁM ĐỐC', style: 'sigFinalApprovalHeader', alignment: 'center' }
+        ],
+        [
+          { text: '\n\n\n', style: 'sigSubTitle' } // Spacer for signature
+        ],
+        [
+          { text: 'Ngày ....../....../......', style: 'sigFinalDateText', alignment: 'center', border: [false, false, false, false] }
+        ]
+      ]
+    },
+    layout: {
+      hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length-1) ? 0.5 : 0.25, // Line under header and above date
+      vLineWidth: (_i: number, _node: any) => 0.5,
+      hLineColor: () => 'black',
+      vLineColor: () => 'black',
+      paddingTop: () => 1, paddingBottom: () => 1, paddingLeft: () => 1, paddingRight: () => 1,
+    },
+    margin: [0, 0, 0, 10] // Margin below this table (page bottom margin)
   });
 
-  /* ---------- FOOTER ---------- */
-  docDefinition.footer = (currentPage: number, pageCount: number) => ({
-    columns: [
-      { text: `Ngày tạo: ${formatDate(new Date().toISOString())}`, alignment: 'left', style: 'info', margin: [40, 0, 0, 0] },
-      { text: `Trang ${currentPage} / ${pageCount}`, alignment: 'right', style: 'info', margin: [0, 0, 40, 0] }
-    ]
-  });
+  // Remove the separate page footer if it exists, as the date line is now part of the content
+  delete docDefinition.footer;
 
   return docDefinition;
 }
