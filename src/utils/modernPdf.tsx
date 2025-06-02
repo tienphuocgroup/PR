@@ -23,38 +23,99 @@ export function getModernPaymentRequestDocDefinition(
       }
     }),
     content: [
-      /* ---------- HEADER BLOCK ---------- */
+      /* ---------- HEADER BLOCK (NEW) ---------- */
       {
         table: {
-          widths: ['30%', '40%', '30%'],
+          widths: ['20%', '50%', '30%'], // Adjusted widths for the new layout
+          body: [
+            [
+              {
+                text: 'TPG',
+                style: 'tpgLogo',
+                rowSpan: 2,
+                alignment: 'center',
+                margin: [0, 15, 0, 0] // Vertical alignment for TPG logo
+              },
+              {
+                text: 'CÔNG TY CỔ PHẦN TẬP ĐOÀN TIẾN PHƯỚC',
+                style: 'companyName',
+                alignment: 'center',
+              },
+              {
+                table: {
+                  widths: ['auto', '*'],
+                  body: [
+                    [{ text: 'Mã tài liệu', style: 'infoLabelSmall', border: [false,false,false,false] }, { text: 'F_QP_M05_01', style: 'infoValueSmall', border: [false,false,false,false], alignment: 'left' }],
+                    [{ text: 'Lần ban hành', style: 'infoLabelSmall', border: [false,false,false,false] }, { text: '01', style: 'infoValueSmall', border: [false,false,false,false], alignment: 'left' }],
+                    [{ text: 'Ngày hiệu lực', style: 'infoLabelSmall', border: [false,false,false,false] }, { text: '18/7/22', style: 'infoValueSmall', border: [false,false,false,false], alignment: 'left' }]
+                  ]
+                },
+                layout: { // Layout for the nested info table on the right
+                  hLineWidth: (i, node) => (i > 0 && i < node.table.body.length) ? 0.5 : 0,
+                  vLineWidth: () => 0,
+                  hLineColor: () => 'black',
+                  paddingTop: () => 0, paddingBottom: () => 0, paddingLeft: () => 2, paddingRight: () => 2,
+                },
+                rowSpan: 2,
+                margin: [0, 5, 0, 0] // Align this block slightly lower to match company name/title block
+              }
+            ],
+            [
+              {text: '', border: [false,false,false,false]}, // Empty cell due to TPG logo rowSpan
+              {
+                text: 'PHIẾU ĐỀ NGHỊ THANH TOÁN',
+                style: 'documentTitle',
+                alignment: 'center'
+              },
+              {text: '', border: [false,false,false,false]} // Empty cell due to right-side info rowSpan
+            ]
+          ]
+        },
+        layout: { // Layout for the main header table (TPG | Company/Title | Info Block)
+          hLineWidth: (i, node) => (i === 0 || i === node.table.body.length || (i === 1 && node.table.body.length === 2)) ? 0.5 : 0,
+          vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length || (i > 0 && i < node.table.widths.length)) ? 0.5 : 0,
+          hLineColor: () => 'black',
+          vLineColor: () => 'black',
+          paddingTop: () => 2, paddingBottom: () => 2, paddingLeft: () => 4, paddingRight: () => 4,
+        }
+      },
+      // Line separator after main header block
+      {
+        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 0.5, lineColor: 'black' }],
+        margin: [0, 0, 0, 2] // Minimal margin after the line
+      },
+      // Số, Ngày, Số PR, Nợ, Có block
+      {
+        table: {
+          widths: ['60%', '40%'], // Give more space to Số/Ngày/PR
           body: [
             [
               {
                 stack: [
-                  { text: `Số: ${data.so || ''}`, style: 'info' },
-                  { text: `Ngày: ${formatDate(data.ngay)}`, style: 'info' },
-                  { text: data.soPR ? `Số PR: ${data.soPR}` : 'Số PR:', style: 'info' }
-                ]
+                  { text: `Số: ${data.so || '..............................'}`, style: 'info' },
+                  { text: `Ngày: ${data.ngay ? formatDate(data.ngay) : '..............................'}`, style: 'info' },
+                  { text: data.soPR ? `Số PR: ${data.soPR}` : 'Số PR: ..........................', style: 'info' }
+                ],
+                border: [false, false, false, false]
               },
-              { text: 'PHIẾU ĐỀ NGHỊ THANH TOÁN', style: 'header', alignment: 'center' },
               {
                 stack: [
-                  { text: 'Lần ban hành: 01', style: 'info', alignment: 'right' },
-                  { text: 'Ngày hiệu lực: 18/7/22', style: 'info', alignment: 'right' },
-                  { text: 'Nợ:', style: 'info', alignment: 'right' },
-                  { text: 'Có:', style: 'info', alignment: 'right' }
-                ]
+                  { text: `Nợ: ${'..............................'}`, style: 'info', alignment: 'left' },
+                  { text: `Có: ${'..............................'}`, style: 'info', alignment: 'left' }
+                ],
+                border: [false, false, false, false],
+                margin: [20, 0, 0, 0] // Indent the Nợ/Có block to the right
               }
             ]
           ]
         },
-        layout: 'noBorders'
+        layout: 'noBorders',
+        margin: [0, 3, 0, 3]
       },
+      // Line separator after Số/Ngày/PR block, before PAYMENT METHOD
       {
-        canvas: [
-          { type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.75, lineColor: '#999999' }
-        ],
-        margin: [0, 6, 0, 10]
+        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 0.5, lineColor: '#999999' }],
+        margin: [0, 0, 0, 10]
       },
 
       /* ---------- PAYMENT METHOD ---------- */
@@ -85,7 +146,13 @@ export function getModernPaymentRequestDocDefinition(
 
     /* ---------- STYLES ---------- */
     styles: {
-      header: { fontSize: 16, bold: true, margin: [0, 0, 0, 15] },
+      // header: { fontSize: 16, bold: true, margin: [0, 0, 0, 15] }, // Original header style, commented out
+      tpgLogo: { fontSize: 36, bold: true, alignment: 'center' }, // For "TPG"
+      companyName: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 1] }, // For "CÔNG TY CỔ PHẦN TẬP ĐOÀN TIẾN PHƯỚC"
+      documentTitle: { fontSize: 13, bold: true, alignment: 'center', margin: [0, 1, 0, 0] }, // For "PHIẾU ĐỀ NGHỊ THANH TOÁN"
+      infoLabelSmall: { fontSize: 8, bold: false, margin: [0,0.5,0,0.5] }, // For labels like "Mã tài liệu"
+      infoValueSmall: { fontSize: 8, bold: false, margin: [0,0.5,0,0.5], alignment: 'left' }, // For values like "F_QP_M05_01" (not bold in image)
+      info: { fontSize: 10, margin: [0, 2, 0, 2] }, // Adjusted existing info style for Số/Ngày/PR
       subheader: { fontSize: 13, bold: true, margin: [0, 10, 0, 5] },
       info: { fontSize: 10, margin: [0, 1, 0, 1] },
       infoAmount: { fontSize: 11, bold: true, margin: [0, 5, 0, 0] },
