@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, FileText } from 'lucide-react';
+import { Save, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import Cookies from 'js-cookie';
+import { Disclosure } from '@headlessui/react';
 import { FormField } from './ui/FormField';
 import { FileUpload } from './ui/FileUpload';
 import { DetailTable } from './DetailTable';
@@ -273,29 +274,42 @@ export function PaymentRequestForm() {
               />
             </div>
 
-            {/* JSON Input for Payment Details */}
-            <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-slate-50 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Nhập chi tiết từ JSON
-              </h3>
-              <p className="text-sm text-gray-600 mb-3">
-                Dán nội dung JSON vào ô bên dưới để tự động điền bảng chi tiết. Mỗi mục trong JSON sẽ tạo một hàng mới.
-              </p>
-              <textarea
-                className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono placeholder-gray-400"
-                rows={10}
-                placeholder={'[\n  {\n    "description": "Tên sản phẩm/dịch vụ",\n    "quantity": 1,\n    "unit_price": 100000, // Giá đơn vị (có thể là ngoại tệ nếu amount là VND tương ứng)\n    "currency": "VND",   // Đơn vị tiền tệ của unit_price (ví dụ: \"USD\", \"VND\")\n    "amount": 100000,   // Tổng tiền cuối cùng bằng VND cho mục này\n    "donVi": "Cái"      // (Tùy chọn) Đơn vị tính, ví dụ: Cái, Gói, Lần\n  },\n  {\n    "description": "Sản phẩm khác",\n    "quantity": 2,\n    "unit_price": 25.50,\n    "currency": "USD",\n    "amount": 1200000, // = 2 * 25.50 USD * tỷ giá (ví dụ)\n    "donVi": "Tháng"\n  }\n  // ... thêm các mục khác nếu cần\n]'}
-                value={jsonInput}
-                onChange={(e) => setJsonInput(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={handleApplyJson}
-                className="mt-3 inline-flex items-center justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 ease-in-out"
-              >
-                Áp dụng JSON vào bảng chi tiết
-              </button>
-            </div>
+            {/* JSON Input for Payment Details - Collapsible */}
+            <Disclosure as="div" className="mb-6 border border-gray-300 rounded-lg overflow-hidden">
+              {({ open }: { open: boolean }) => (
+                <>
+                  <Disclosure.Button className="flex justify-between w-full px-4 py-3 text-sm font-medium text-left text-gray-700 bg-slate-50 hover:bg-slate-100 focus:outline-none focus-visible:ring focus-visible:ring-indigo-500 focus-visible:ring-opacity-75 transition-colors">
+                    <div className="flex items-center">
+                      <span className="text-base font-semibold">Nhập chi tiết từ JSON</span>
+                    </div>
+                    {open ? (
+                      <ChevronUp className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-500" />
+                    )}
+                  </Disclosure.Button>
+                  <Disclosure.Panel className="px-4 pt-2 pb-4 bg-slate-50">
+                    <p className="text-sm text-gray-600 mb-3">
+                      Dán nội dung JSON vào ô bên dưới để tự động điền bảng chi tiết. Mỗi mục trong JSON sẽ tạo một hàng mới.
+                    </p>
+                    <textarea
+                      className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono placeholder-gray-400"
+                      rows={10}
+                      placeholder={'[\n  {\n    "description": "Tên sản phẩm/dịch vụ",\n    "quantity": 1,\n    "unit_price": 100000, // Giá đơn vị (có thể là ngoại tệ nếu amount là VND tương ứng)\n    "currency": "VND",   // Đơn vị tiền tệ của unit_price (ví dụ: \"USD\", \"VND\")\n    "amount": 100000,   // Tổng tiền cuối cùng bằng VND cho mục này\n    "donVi": "Cái"      // (Tùy chọn) Đơn vị tính, ví dụ: Cái, Gói, Lần\n  },\n  {\n    "description": "Sản phẩm khác",\n    "quantity": 2,\n    "unit_price": 25.50,\n    "currency": "USD",\n    "amount": 1200000, // = 2 * 25.50 USD * tỷ giá (ví dụ)\n    "donVi": "Tháng"\n  }\n  // ... thêm các mục khác nếu cần\n]'}
+                      value={jsonInput}
+                      onChange={(e) => setJsonInput(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyJson}
+                      className="mt-3 inline-flex items-center justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 ease-in-out"
+                    >
+                      Áp dụng JSON vào bảng chi tiết
+                    </button>
+                  </Disclosure.Panel>
+                </>
+              )}
+            </Disclosure>
 
             {/* Payment Details Table */}
             <DetailTable form={form} />
