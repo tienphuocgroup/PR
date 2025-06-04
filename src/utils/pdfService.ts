@@ -13,6 +13,7 @@ pdfMake.fonts = {
 };
 import { PaymentRequest } from '../types';
 import { getModernPaymentRequestDocDefinition } from './modernPdf';
+import { loadImageAsBase64 } from './imageUtils';
 
 export interface PDFGenerationOptions {
   status?: 'draft' | 'pending' | 'approved' | 'rejected';
@@ -35,7 +36,9 @@ export class ModernPDFService {
     } = options;
 
     try {
-      const docDefinition = getModernPaymentRequestDocDefinition(data, { status, showWatermark });
+      // Load the logo as base64
+      const tpgLogoBase64 = await loadImageAsBase64('/tpg-logo.png');
+      const docDefinition = getModernPaymentRequestDocDefinition(data, { status, showWatermark, images: { tpgLogo: tpgLogoBase64 } });
       return await new Promise<Blob>((resolve, reject) => {
         pdfMake.createPdf(docDefinition).getBlob((blob: Blob) => {
           if (blob) resolve(blob);
