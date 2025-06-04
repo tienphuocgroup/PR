@@ -17,61 +17,80 @@ export function getModernPaymentRequestDocDefinition(
   // Start with the initial content elements
   pageContentStack.push(
     /* ---------- HEADER BLOCK (NEW) ---------- */
-    {
-      table: {
-        widths: ['20%', '50%', '30%'], // Adjusted widths for the new layout
-        body: [
-          [
-            {
-              image: 'tpgLogo',
-              width: 60,
-              rowSpan: 2,
-              alignment: 'center',
-              margin: [0, 8, 0, 0] // Vertical alignment for TPG logo
-            },
-            {
-              text: 'CÔNG TY CỔ PHẦN TẬP ĐOÀN TIẾN PHƯỚC',
-              style: 'companyName',
-              alignment: 'center',
-            },
-            {
-              table: {
-                widths: ['auto', '*'],
-                body: [
-                  [{ text: 'Mã tài liệu', style: 'infoLabelSmall', border: [false,false,false,false] }, { text: 'F_QP_M05_01', style: 'infoValueSmall', border: [false,false,false,false], alignment: 'left' }],
-                  [{ text: 'Lần ban hành', style: 'infoLabelSmall', border: [false,false,false,false] }, { text: '01', style: 'infoValueSmall', border: [false,false,false,false], alignment: 'left' }],
-                  [{ text: 'Ngày hiệu lực', style: 'infoLabelSmall', border: [false,false,false,false] }, { text: '18/7/22', style: 'infoValueSmall', border: [false,false,false,false], alignment: 'left' }]
-                ]
-              },
-              layout: { // Layout for the nested info table on the right
-                hLineWidth: (i, node) => (i > 0 && i < node.table.body.length) ? 0.5 : 0,
-                vLineWidth: () => 0,
-                hLineColor: () => 'black',
-                paddingTop: () => 0, paddingBottom: () => 0, paddingLeft: () => 2, paddingRight: () => 2,
-              },
-              rowSpan: 2,
-              margin: [0, 2, 0, 0] // Align this block slightly lower to match company name/title block
-            }
-          ],
-          [
-            {text: '', border: [false,false,false,false]}, // Empty cell due to TPG logo rowSpan
-            {
-              text: 'PHIẾU ĐỀ NGHỊ THANH TOÁN',
-              style: 'documentTitle',
-              alignment: 'center'
-            },
-            {text: '', border: [false,false,false,false]} // Empty cell due to right-side info rowSpan
-          ]
-        ]
-      },
-      layout: { // Layout for the main header table (TPG | Company/Title | Info Block)
-        hLineWidth: (i, node) => (i === 0 || i === node.table.body.length || (i === 1 && node.table.body.length === 2)) ? 0.5 : 0,
-        vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length || (i > 0 && i < node.table.widths.length)) ? 0.5 : 0,
-        hLineColor: () => 'black',
-        vLineColor: () => 'black',
-        paddingTop: () => 1, paddingBottom: () => 1, paddingLeft: () => 4, paddingRight: () => 4,
-      }
-    },
+    // NOTE: Ensure the following styles are defined or updated in your styles configuration:
+// companyName: { fontSize: 11 /* or 12 */, bold: true, alignment: 'center', /* any other existing properties */ },
+// documentTitle: { fontSize: 17 /* or 16/18 */, bold: true, alignment: 'center', /* any other existing properties */ },
+// infoLabelSmall: { fontSize: 10 /* or 11 */, alignment: 'left', /* any other existing properties */ },
+// infoValueSmall: { fontSize: 10 /* or 11 */, alignment: 'right', /* any other existing properties */ },
+{
+  table: {
+    widths: ['20%', '50%', '30%'], // Rule 1: Adjusted widths
+    body: [
+      [
+        { // Rule 2: Left logo cell
+          image: 'tpgLogo',
+          width: 60,
+          rowSpan: 2,
+          alignment: 'center', // Centered horizontally
+          margin: [0, 6, 0, 0] // Adjusted top margin, cell gets 6px padding from outer layout
+        },
+        { // Rule 3: Middle zone - Company name
+          text: 'CÔNG TY CỔ PHẦN TẬP ĐOÀN TIẾN PHƯỚC',
+          style: 'companyName', // Assumed: 11-12pt, bold, ALL CAPS
+          alignment: 'center',
+          margin: [0, 5, 0, 5] // To influence row height (~40%)
+        },
+        { // Rule 4: Right-hand metadata table
+          rowSpan: 2,
+          margin: [0, 2, 0, 0], // Keeps original vertical alignment for the block
+          table: {
+            widths: ['40%', '60%'], // Rule 4: Labels 40%, values 60%
+            body: [
+              [
+                { text: 'Mã tài liệu', style: 'infoLabelSmall', margin: [8, 2, 2, 2], border: [false, false, false, true] }, // 8px left padding, vertical rule
+                { text: 'F_QP_M05_01', style: 'infoValueSmall', alignment: 'right', margin: [2, 2, 8, 2], border: [false, false, false, false] } // Right-aligned, 8px right padding
+              ],
+              [
+                { text: 'Lần ban hành', style: 'infoLabelSmall', margin: [8, 2, 2, 2], border: [false, false, false, true] },
+                { text: '01', style: 'infoValueSmall', alignment: 'right', margin: [2, 2, 8, 2], border: [false, false, false, false] }
+              ],
+              [
+                { text: 'Ngày hiệu lực', style: 'infoLabelSmall', margin: [8, 2, 2, 2], border: [false, false, false, true] },
+                { text: '18/07/2022', style: 'infoValueSmall', alignment: 'right', margin: [2, 2, 8, 2], border: [false, false, false, false] } // Date format updated
+              ]
+              // Assumed: infoLabelSmall/infoValueSmall styles handle 10-11pt font, regular weight.
+            ]
+          },
+          layout: { // Layout for the nested info table
+            hLineWidth: (i, node) => (i > 0 && i < node.table.body.length) ? 0.5 : 0, // Row separators (between rows)
+            vLineWidth: () => 0, // Vertical lines handled by cell borders in the nested table
+            hLineColor: () => 'black',
+            paddingTop: () => 1, paddingBottom: () => 1, paddingLeft: () => 2, paddingRight: () => 2, // Minimal padding for nested cells
+          },
+        }
+      ],
+      [
+        { text: '', border: [false, false, false, false] }, // Empty cell due to TPG logo rowSpan
+        { // Rule 3: Middle zone - Form title
+          text: 'PHIẾU ĐỀ NGHỊ THANH TOÁN',
+          style: 'documentTitle', // Assumed: 16-18pt, bold, ALL CAPS
+          alignment: 'center',
+          margin: [0, 10, 0, 10] // To influence row height (~60%) and vertical centering
+        },
+        { text: '', border: [false, false, false, false] } // Empty cell due to right-side info rowSpan
+      ]
+    ]
+  },
+  layout: { // Layout for the main header table
+    // Rule 1 & 5: Border thickness and color. Original logic provides 0.5pt lines on all external and internal.
+    hLineWidth: (i, node) => (i === 0 || i === node.table.body.length || (i === 1 && node.table.body.length === 2)) ? 0.5 : 0,
+    vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length || (i > 0 && i < node.table.widths.length)) ? 0.5 : 0,
+    hLineColor: () => 'black',
+    vLineColor: () => 'black',
+    // Rule 2 & 5: Uniform padding token (~6-8px). Using 6px for all cells in outer table.
+    paddingTop: () => 6, paddingBottom: () => 6, paddingLeft: () => 6, paddingRight: () => 6,
+  }
+},
 
     // Số, Ngày, Số PR, Nợ, Có block
     {
