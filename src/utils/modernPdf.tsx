@@ -169,7 +169,7 @@ export function getModernPaymentRequestDocDefinition(
       sigSubTitle: { fontSize: 8, italics: true, alignment: 'center', margin: [0, 0.5, 0, 1] },
       sigActionText: { fontSize: 8, alignment: 'center', margin: [0, 0.5, 0, 0.5] },
       sigFinalApprovalHeader: { fontSize: 9, bold: true, alignment: 'center', fillColor: '#EFEFEF', margin: [2,1,2,1] },
-      sigFinalDateText: { fontSize: 8, alignment: 'center', margin: [0, 2, 0, 0] }
+      sigFinalDateText: { fontSize: 8, alignment: 'center' }
     },
 
     defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.1 }
@@ -330,12 +330,12 @@ export function getModernPaymentRequestDocDefinition(
           { text: '\n\n\n', style: 'sigSubTitle' } // Spacer for signature
         ],
         [
-          { text: 'Ngày ....../....../......', style: 'sigFinalDateText', alignment: 'center', border: [false, false, false, false] }
+          { text: 'Ngày ....../....../......', style: 'sigFinalDateText', alignment: 'center' }
         ]
       ]
     },
     layout: {
-      hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length-1) ? 0.5 : 0.25, // Line under header and above date
+      hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.25, // Thick lines for table top, under header, and table bottom
       vLineWidth: (_i: number, _node: any) => 0.5,
       hLineColor: () => 'black',
       vLineColor: () => 'black',
