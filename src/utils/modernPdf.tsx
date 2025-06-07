@@ -29,34 +29,34 @@ export function getModernPaymentRequestDocDefinition(
       [
         { // Rule 2: Left logo cell
           image: 'tpgLogo',
-          width: 60,
+          width: 55,  // Reduced from 60
           rowSpan: 2,
-          alignment: 'center', // Centered horizontally
-          margin: [0, 6, 0, 0] // Adjusted top margin, cell gets 6px padding from outer layout
+          alignment: 'center',
+          margin: [0, 3, 0, 0]  // Reduced top margin from 6 to 3
         },
         { // Rule 3: Middle zone - Company name
           text: 'CÔNG TY CỔ PHẦN TẬP ĐOÀN TIẾN PHƯỚC',
-          style: 'companyName', // Assumed: 11-12pt, bold, ALL CAPS
+          style: 'companyName',
           alignment: 'center',
-          margin: [0, 5, 0, 5] // To influence row height (~40%)
+          margin: [0, 3, 0, 3]  // Reduced vertical margins from 5 to 3
         },
         { // Rule 4: Right-hand metadata table
           rowSpan: 2,
-          margin: [0, 2, 0, 0], // Keeps original vertical alignment for the block
+          margin: [0, 1, 0, 0],  // Reduced top margin from 2 to 1
           table: {
-            widths: ['40%', '60%'], // Rule 4: Labels 40%, values 60%
+            widths: ['55%', '45%'], // Rule 4: Labels 40%, values 60%
             body: [
               [
-                { text: 'Mã tài liệu', style: 'infoLabelSmall', margin: [8, 2, 2, 2], border: [false, false, false, true] }, // 8px left padding, vertical rule
-                { text: 'F_QP_M05_01', style: 'infoValueSmall', alignment: 'right', margin: [2, 2, 8, 2], border: [false, false, false, false] } // Right-aligned, 8px right padding
+                { text: 'Mã tài liệu', style: 'infoLabelSmall', margin: 2, border: [true, true, true, true] },
+                { text: 'F_QP_M05_01', style: 'infoValueSmall', alignment: 'right', margin: 2, border: [true, true, true, true] }
               ],
               [
-                { text: 'Lần ban hành', style: 'infoLabelSmall', margin: [8, 2, 2, 2], border: [false, false, false, true] },
-                { text: '01', style: 'infoValueSmall', alignment: 'right', margin: [2, 2, 8, 2], border: [false, false, false, false] }
+                { text: 'Lần ban hành', style: 'infoLabelSmall', margin: 2, border: [true, true, true, true] },
+                { text: '01', style: 'infoValueSmall', alignment: 'right', margin: 2, border: [true, true, true, true] }
               ],
               [
-                { text: 'Ngày hiệu lực', style: 'infoLabelSmall', margin: [8, 2, 2, 2], border: [false, false, false, true] },
-                { text: '18/07/2022', style: 'infoValueSmall', alignment: 'right', margin: [2, 2, 8, 2], border: [false, false, false, false] } // Date format updated
+                { text: 'Ngày hiệu lực', style: 'infoLabelSmall', margin: 2, border: [true, true, true, true] },
+                { text: '18/07/2022', style: 'infoValueSmall', alignment: 'right', margin: 2, border: [true, true, true, true] }
               ]
               // Assumed: infoLabelSmall/infoValueSmall styles handle 10-11pt font, regular weight.
             ]
@@ -65,7 +65,7 @@ export function getModernPaymentRequestDocDefinition(
             hLineWidth: (i, node) => (i > 0 && i < node.table.body.length) ? 0.5 : 0, // Row separators (between rows)
             vLineWidth: () => 0, // Vertical lines handled by cell borders in the nested table
             hLineColor: () => 'black',
-            paddingTop: () => 1, paddingBottom: () => 1, paddingLeft: () => 2, paddingRight: () => 2, // Minimal padding for nested cells
+            paddingTop: () => 1, paddingBottom: () => 1, paddingLeft: () => 1, paddingRight: () => 1, // Minimal padding for nested cells
           },
         }
       ],
@@ -73,9 +73,9 @@ export function getModernPaymentRequestDocDefinition(
         { text: '', border: [false, false, false, false] }, // Empty cell due to TPG logo rowSpan
         { // Rule 3: Middle zone - Form title
           text: 'PHIẾU ĐỀ NGHỊ THANH TOÁN',
-          style: 'documentTitle', // Assumed: 16-18pt, bold, ALL CAPS
+          style: 'documentTitle',
           alignment: 'center',
-          margin: [0, 10, 0, 10] // To influence row height (~60%) and vertical centering
+          margin: [0, 2, 0, 0]  // Reduced top margin from 5 to 2
         },
         { text: '', border: [false, false, false, false] } // Empty cell due to right-side info rowSpan
       ]
