@@ -1,0 +1,558 @@
+// TPG Payment Request Management System - Prisma Schema
+// Vietnamese Financial Compliance & AI Integration Support
+// Created: 2025-08-26
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// USER MANAGEMENT MODELS
+// =============================================================================
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  email        String    @unique
+  fullName     String    @map("full_name")
+  department   String    // Vietnamese: bộ phận
+  role         UserRole  @default(USER)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  passwordHash String    @map("password_hash")
+  
+  // Audit fields
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  
+  // Relations
+  createdByUser        User?           @relation("UserCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser        User?           @relation("UserUpdatedBy", fields: [updatedBy], references: [id])
+  createdUsers         User[]          @relation("UserCreatedBy")
+  updatedUsers         User[]          @relation("UserUpdatedBy")
+  sessions             UserSession[]
+  createdPayments      PaymentRequest[] @relation("PaymentCreatedBy")
+  updatedPayments      PaymentRequest[] @relation("PaymentUpdatedBy")
+  approvedPayments     PaymentRequest[] @relation("PaymentApprovedBy")
+  auditLogs            AuditLog[]
+  workflowApprovals    WorkflowHistory[]
+  attachments          Attachment[]
+  suppliers            Supplier[]
+  dataOperations       DataOperation[]
+  systemSettings       SystemSetting[]
+  validatedTrainingData MLTrainingData[]
+
+  @@map("users")
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  sessionToken String   @unique @map("session_token")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+// =============================================================================
+// PAYMENT REQUEST CORE MODELS
+// =============================================================================
+
+model PaymentRequest {
+  id                  String    @id @default(cuid())
+  so                  String    @unique // Số phiếu đề nghị
+  ngay                DateTime  // Ngày lập phiếu
+  soPr                String?   @map("so_pr") // Số PR (optional reference)
+  nguoiDeNghi         String    @map("nguoi_de_nghi") // Người đề nghị
+  boPhan              String    @map("bo_phan") // Bộ phận
+  nganSach            BudgetType? @map("ngan_sach") // Ngân sách
+  maKhoanMuc          String?   @map("ma_khoan_muc") // Mã khoản mục
+  keHoachChi          PlanType? @map("ke_hoach_chi") // Kế hoạch chi
+  noiDungThanhToan    String    @map("noi_dung_thanh_toan") // Nội dung thanh toán
+  nhaCungCap          String    @map("nha_cung_cap") // Nhà cung cấp
+  soTien              Decimal   @map("so_tien") // Số tiền
+  bangChu             String    @map("bang_chu") // Bằng chữ
+  ngayDenHan          DateTime  @map("ngay_den_han") // Ngày đến hạn
+  chungTuDinhKem      String?   @map("chung_tu_dinh_kem") // Chứng từ đính kèm description
+  
+  // Status tracking
+  status              PaymentStatus @default(DRAFT)
+  priority            Priority      @default(NORMAL)
+  
+  // Approval workflow
+  submittedAt         DateTime? @map("submitted_at")
+  approvedAt          DateTime? @map("approved_at")
+  approvedBy          String?   @map("approved_by")
+  rejectionReason     String?   @map("rejection_reason")
+  paymentDate         DateTime? @map("payment_date")
+  paymentReference    String?   @map("payment_reference")
+  
+  // Audit fields
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at") // Soft delete
+  createdBy           String   @map("created_by")
+  updatedBy           String?  @map("updated_by")
+  version             Int      @default(1) // Optimistic locking
+  
+  // Search optimization
+  searchText          String?  @map("search_text") // Generated field in SQLite
+  
+  // Relations
+  createdByUser       User              @relation("PaymentCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser       User?             @relation("PaymentUpdatedBy", fields: [updatedBy], references: [id])
+  approvedByUser      User?             @relation("PaymentApprovedBy", fields: [approvedBy], references: [id])
+  details             PaymentDetail[]
+  attachments         Attachment[]
+  workflowHistory     WorkflowHistory[]
+  embeddings          Embedding[]
+  aiInsights          AIInsight[]
+  trainingData        MLTrainingData[]
+
+  @@map("payment_requests")
+}
+
+model PaymentDetail {
+  id                String         @id @default(cuid())
+  paymentRequestId  String         @map("payment_request_id")
+  stt               Int            // Số thứ tự
+  dienGiai          String         @map("dien_giai") // Diễn giải
+  soLuong           Decimal        @map("so_luong") // Số lượng
+  donVi             String         @map("don_vi") // Đơn vị
+  donGia            Decimal        @map("don_gia") // Đơn giá
+  thanhTien         Decimal        @map("thanh_tien") // Thành tiền
+  
+  // Additional fields for enhanced tracking
+  taxRate           Decimal?       @default(0) @map("tax_rate")
+  taxAmount         Decimal?       @default(0) @map("tax_amount")
+  discountRate      Decimal?       @default(0) @map("discount_rate")
+  discountAmount    Decimal?       @default(0) @map("discount_amount")
+  
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  paymentRequest    PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentRequestId, stt])
+  @@map("payment_details")
+}
+
+model Attachment {
+  id                String         @id @default(cuid())
+  paymentRequestId  String         @map("payment_request_id")
+  originalFilename  String         @map("original_filename")
+  storedFilename    String         @unique @map("stored_filename")
+  filePath          String         @map("file_path")
+  fileSize          Int            @map("file_size")
+  mimeType          String         @map("mime_type")
+  fileHash          String         @unique @map("file_hash") // SHA-256
+  description       String?
+  
+  createdAt         DateTime       @default(now()) @map("created_at")
+  createdBy         String         @map("created_by")
+  
+  // Relations
+  paymentRequest    PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  createdByUser     User           @relation(fields: [createdBy], references: [id])
+
+  @@map("attachments")
+}
+
+// =============================================================================
+// AUDIT AND COMPLIANCE MODELS
+// =============================================================================
+
+model AuditLog {
+  id                String    @id @default(cuid())
+  tableName         String    @map("table_name")
+  recordId          String    @map("record_id")
+  operation         Operation
+  oldValues         String?   @map("old_values") // JSON format
+  newValues         String?   @map("new_values") // JSON format
+  changedFields     String?   @map("changed_fields") // JSON array
+  userId            String?   @map("user_id")
+  ipAddress         String?   @map("ip_address")
+  userAgent         String?   @map("user_agent")
+  sessionId         String?   @map("session_id")
+  
+  // Compliance fields
+  businessReason    String?   @map("business_reason")
+  approvalReference String?   @map("approval_reference")
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+  
+  // Cryptographic verification
+  checksum          String    // Hash of critical audit data
+  previousChecksum  String?   @map("previous_checksum")
+  
+  // Relations
+  user              User?     @relation(fields: [userId], references: [id])
+
+  @@index([tableName, recordId])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model WorkflowHistory {
+  id                        String         @id @default(cuid())
+  paymentRequestId          String         @map("payment_request_id")
+  fromStatus                String?        @map("from_status")
+  toStatus                  String         @map("to_status")
+  action                    String
+  comments                  String?
+  
+  // Approval details
+  approverId                String?        @map("approver_id")
+  approvalLevel             Int?           @default(1) @map("approval_level")
+  requiresAdditionalApproval Boolean?       @default(false) @map("requires_additional_approval")
+  
+  createdAt                 DateTime       @default(now()) @map("created_at")
+  
+  // Relations
+  paymentRequest            PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  approver                  User?          @relation(fields: [approverId], references: [id])
+
+  @@index([paymentRequestId])
+  @@index([createdAt])
+  @@map("workflow_history")
+}
+
+// =============================================================================
+// AI INTEGRATION MODELS
+// =============================================================================
+
+model Embedding {
+  id               String         @id @default(cuid())
+  paymentRequestId String         @map("payment_request_id")
+  embeddingType    EmbeddingType  @map("embedding_type")
+  modelName        String         @map("model_name")
+  vectorData       Bytes          @map("vector_data") // Serialized vector
+  vectorDimension  Int            @map("vector_dimension")
+  
+  createdAt        DateTime       @default(now()) @map("created_at")
+  
+  // Relations
+  paymentRequest   PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentRequestId, embeddingType, modelName])
+  @@index([embeddingType])
+  @@index([modelName])
+  @@map("embeddings")
+}
+
+model AIInsight {
+  id               String         @id @default(cuid())
+  paymentRequestId String         @map("payment_request_id")
+  insightType      InsightType    @map("insight_type")
+  modelName        String         @map("model_name")
+  modelVersion     String         @map("model_version")
+  confidenceScore  Decimal?       @map("confidence_score")
+  
+  // Analysis results
+  analysisResult   String         @map("analysis_result") // JSON format
+  recommendations  String?        // JSON format
+  riskFactors      String?        @map("risk_factors") // JSON array
+  
+  // Processing metadata
+  processingTimeMs Int?           @map("processing_time_ms")
+  inputTokens      Int?           @map("input_tokens")
+  outputTokens     Int?           @map("output_tokens")
+  
+  createdAt        DateTime       @default(now()) @map("created_at")
+  
+  // Relations
+  paymentRequest   PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+
+  @@index([insightType])
+  @@index([confidenceScore(sort: Desc)])
+  @@index([createdAt])
+  @@map("ai_insights")
+}
+
+model MLTrainingData {
+  id               String         @id @default(cuid())
+  paymentRequestId String?        @map("payment_request_id")
+  dataType         TrainingDataType @map("data_type")
+  inputData        String         @map("input_data") // JSON format
+  targetData       String         @map("target_data") // JSON format
+  
+  // Quality metrics
+  dataQualityScore Decimal?       @map("data_quality_score")
+  isValidated      Boolean        @default(false) @map("is_validated")
+  validatedBy      String?        @map("validated_by")
+  validatedAt      DateTime?      @map("validated_at")
+  
+  // Model training metadata
+  usedInTraining   Boolean        @default(false) @map("used_in_training")
+  trainingBatchId  String?        @map("training_batch_id")
+  
+  createdAt        DateTime       @default(now()) @map("created_at")
+  
+  // Relations
+  paymentRequest   PaymentRequest? @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  validator        User?          @relation(fields: [validatedBy], references: [id])
+
+  @@index([dataType])
+  @@index([isValidated])
+  @@index([usedInTraining])
+  @@map("ml_training_data")
+}
+
+// =============================================================================
+// REPORTING AND ANALYTICS MODELS
+// =============================================================================
+
+model Supplier {
+  id                  String    @id @default(cuid())
+  name                String    @unique
+  taxCode             String?   @unique @map("tax_code") // Mã số thuế
+  address             String?
+  contactPerson       String?   @map("contact_person")
+  phone               String?
+  email               String?
+  bankAccount         String?   @map("bank_account")
+  bankName            String?   @map("bank_name")
+  
+  // Risk assessment
+  riskLevel           RiskLevel @default(MEDIUM) @map("risk_level")
+  creditRating        String?   @map("credit_rating")
+  blacklisted         Boolean   @default(false)
+  
+  // Performance metrics
+  totalTransactions   Int       @default(0) @map("total_transactions")
+  totalAmount         Decimal   @default(0) @map("total_amount")
+  averagePaymentDays  Decimal   @default(0) @map("average_payment_days")
+  
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  createdBy           String?   @map("created_by")
+  
+  // Relations
+  createdByUser       User?     @relation(fields: [createdBy], references: [id])
+
+  @@index([name])
+  @@index([taxCode])
+  @@index([riskLevel])
+  @@map("suppliers")
+}
+
+model CostCenter {
+  id              String      @id @default(cuid())
+  code            String      @unique // Mã khoản mục
+  name            String
+  parentId        String?     @map("parent_id")
+  budgetAmount    Decimal?    @map("budget_amount")
+  spentAmount     Decimal     @default(0) @map("spent_amount")
+  fiscalYear      Int         @map("fiscal_year")
+  isActive        Boolean     @default(true) @map("is_active")
+  
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  parent          CostCenter? @relation("CostCenterHierarchy", fields: [parentId], references: [id])
+  children        CostCenter[] @relation("CostCenterHierarchy")
+
+  @@index([code])
+  @@index([fiscalYear])
+  @@index([parentId])
+  @@map("cost_centers")
+}
+
+// =============================================================================
+// SYSTEM CONFIGURATION MODELS
+// =============================================================================
+
+model SystemSetting {
+  id          String      @id @default(cuid())
+  settingKey  String      @unique @map("setting_key")
+  settingValue String     @map("setting_value")
+  dataType    DataType    @map("data_type")
+  description String?
+  isPublic    Boolean     @default(false) @map("is_public")
+  
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  updatedBy   String?     @map("updated_by")
+  
+  // Relations
+  updatedByUser User?     @relation(fields: [updatedBy], references: [id])
+
+  @@map("system_settings")
+}
+
+model DataOperation {
+  id                  String            @id @default(cuid())
+  operationType       OperationType     @map("operation_type")
+  format              ExportFormat
+  filePath            String?           @map("file_path")
+  fileSize            Int?              @map("file_size")
+  recordCount         Int?              @map("record_count")
+  
+  // Operation details
+  filters             String?           // JSON format for export filters
+  status              OperationStatus   @default(PENDING)
+  progressPercentage  Int               @default(0) @map("progress_percentage")
+  errorMessage        String?           @map("error_message")
+  
+  // Timing
+  startedAt           DateTime?         @map("started_at")
+  completedAt         DateTime?         @map("completed_at")
+  durationSeconds     Int?              @map("duration_seconds")
+  
+  createdAt           DateTime          @default(now()) @map("created_at")
+  createdBy           String            @map("created_by")
+  
+  // Relations
+  createdByUser       User              @relation(fields: [createdBy], references: [id])
+
+  @@index([operationType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("data_operations")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+  VIEWER
+
+  @@map("user_role")
+}
+
+enum BudgetType {
+  HOAT_DONG  @map("Hoạt động")
+  DU_AN      @map("Dự án")
+
+  @@map("budget_type")
+}
+
+enum PlanType {
+  TRONG_KH   @map("Trong KH")
+  NGOAI_KH   @map("Ngoài KH")
+
+  @@map("plan_type")
+}
+
+enum PaymentStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+
+  @@map("payment_status")
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+
+  @@map("priority")
+}
+
+enum Operation {
+  INSERT
+  UPDATE
+  DELETE
+
+  @@map("operation")
+}
+
+enum EmbeddingType {
+  CONTENT
+  DESCRIPTION
+  SUPPLIER
+  CATEGORY
+
+  @@map("embedding_type")
+}
+
+enum InsightType {
+  RISK_ANALYSIS       @map("risk_analysis")
+  COST_PREDICTION     @map("cost_prediction")
+  SUPPLIER_ANALYSIS   @map("supplier_analysis")
+  CATEGORY_CLASSIFICATION @map("category_classification")
+  ANOMALY_DETECTION   @map("anomaly_detection")
+  TREND_ANALYSIS      @map("trend_analysis")
+
+  @@map("insight_type")
+}
+
+enum TrainingDataType {
+  TEXT_CLASSIFICATION    @map("text_classification")
+  COST_PREDICTION        @map("cost_prediction")
+  RISK_ASSESSMENT        @map("risk_assessment")
+  SUPPLIER_CATEGORIZATION @map("supplier_categorization")
+  APPROVAL_PREDICTION    @map("approval_prediction")
+
+  @@map("training_data_type")
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+
+  @@map("risk_level")
+}
+
+enum DataType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+
+  @@map("data_type")
+}
+
+enum OperationType {
+  EXPORT
+  IMPORT
+  BACKUP
+  RESTORE
+
+  @@map("operation_type")
+}
+
+enum ExportFormat {
+  JSON
+  CSV
+  XLSX
+  SQL
+
+  @@map("export_format")
+}
+
+enum OperationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+
+  @@map("operation_status")
+}
