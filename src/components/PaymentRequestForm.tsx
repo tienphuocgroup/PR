@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, FileText, ChevronDown, ChevronUp } from 'lucide-react';
-import Cookies from 'js-cookie';
+// import Cookies from 'js-cookie'; // No longer needed - using secureFormStorage
 import { Disclosure } from '@headlessui/react';
 import { FormField } from './ui/FormField';
 import { FileUpload } from './ui/FileUpload';
@@ -11,8 +11,10 @@ import { ModernPDFActions } from './ModernPDFActions';
 import { PaymentRequest } from '../types';
 import { paymentRequestSchema } from '../utils/validation';
 import { formatCurrency, numberToCurrencyText } from '../utils/formatters';
+import { validateJsonInput, sanitizeFormField } from '../utils/security';
+import { secureFormStorage } from '../utils/secureStorage';
 
-const COOKIE_KEY = 'paymentRequestFormData';
+// const COOKIE_KEY = 'paymentRequestFormData'; // No longer used - replaced with secureFormStorage
 
 // Default values for the form
 const defaultValues: Partial<PaymentRequest> = {
@@ -54,16 +56,18 @@ export function PaymentRequestForm() {
   const soTien = watch('soTien');
   const watchedData = watch(); // Watch all form data for PDF generation
 
-  // Load saved form data from cookies
+  // Load saved form data from secure storage
   useEffect(() => {
-    const savedData = Cookies.get(COOKIE_KEY);
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        reset(parsedData);
-      } catch (error) {
-        console.error('Error parsing saved form data:', error);
+    try {
+      const savedData = secureFormStorage.load();
+      if (savedData) {
+        reset(savedData);
+        console.log('Form data loaded successfully');
       }
+    } catch (error) {
+      console.error('Error loading saved form data:', error);
+      // Clear potentially corrupted data
+      secureFormStorage.clear();
     }
   }, [reset]);
 
@@ -83,31 +87,26 @@ export function PaymentRequestForm() {
       alert('Vui lòng nhập dữ liệu JSON.');
       return;
     }
+
+    const validation = validateJsonInput(jsonInput);
+    if (!validation.isValid) {
+      alert(`Lỗi JSON: ${validation.error}`);
+      return;
+    }
+
     try {
-      const parsedJson = JSON.parse(jsonInput);
-      if (!Array.isArray(parsedJson)) {
-        alert('Dữ liệu JSON đầu vào phải là một mảng (array).');
-        return;
-      }
-
-      const newDetails = parsedJson.map((item: any, index: number) => {
-        if (
-          typeof item.description !== 'string' ||
-          typeof item.quantity !== 'number' ||
-          item.quantity <= 0 ||
-          typeof item.amount !== 'number' ||
-          item.amount < 0
-        ) {
-          throw new Error(
-            `Mục không hợp lệ ở vị trí ${index + 1}: \"description\" (chuỗi), \"quantity\" (số dương), \"amount\" (số không âm) là bắt buộc.`
-          );
-        }
-
+      const parsedJson = validation.data;
+      const newDetails = parsedJson.map((item: {
+        description: string;
+        quantity: number;
+        amount: number;
+        donVi?: string;
+      }, index: number) => {
         return {
           stt: index + 1,
-          dienGiai: item.description,
+          dienGiai: sanitizeFormField(item.description),
           soLuong: item.quantity,
-          donVi: item.donVi || 'Post', // Allow "donVi" from JSON or default to "Post"
+          donVi: sanitizeFormField(item.donVi) || 'Post',
           donGia: item.quantity !== 0 ? item.amount / item.quantity : 0,
           thanhTien: item.amount,
         };
@@ -128,10 +127,19 @@ export function PaymentRequestForm() {
 
   const onSubmit = async (data: PaymentRequest) => {
     try {
-      // Save form data to cookies (excluding file attachments)
-      const dataToSave = { ...data };
-      delete dataToSave.attachments;
-      Cookies.set(COOKIE_KEY, JSON.stringify(dataToSave), { expires: 7 });
+      // Sanitize form data before saving
+      const sanitizedData: PaymentRequest = {
+        ...data,
+        nguoiDeNghi: sanitizeFormField(data.nguoiDeNghi),
+        boPhan: sanitizeFormField(data.boPhan),
+        noiDungThanhToan: sanitizeFormField(data.noiDungThanhToan),
+        nhaCungCap: sanitizeFormField(data.nhaCungCap),
+        chungTuDinhKem: sanitizeFormField(data.chungTuDinhKem),
+        maKhoanMuc: sanitizeFormField(data.maKhoanMuc),
+      };
+
+      // Save using secure storage
+      secureFormStorage.save(sanitizedData);
 
       // Show success message
       alert('Dữ liệu đã được lưu thành công! Bạn có thể tạo PDF bằng các nút bên dưới.');
@@ -295,7 +303,24 @@ export function PaymentRequestForm() {
                     <textarea
                       className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono placeholder-gray-400"
                       rows={10}
-                      placeholder={'[\n  {\n    "description": "Tên sản phẩm/dịch vụ",\n    "quantity": 1,\n    "unit_price": 100000, // Giá đơn vị (có thể là ngoại tệ nếu amount là VND tương ứng)\n    "currency": "VND",   // Đơn vị tiền tệ của unit_price (ví dụ: \"USD\", \"VND\")\n    "amount": 100000,   // Tổng tiền cuối cùng bằng VND cho mục này\n    "donVi": "Cái"      // (Tùy chọn) Đơn vị tính, ví dụ: Cái, Gói, Lần\n  },\n  {\n    "description": "Sản phẩm khác",\n    "quantity": 2,\n    "unit_price": 25.50,\n    "currency": "USD",\n    "amount": 1200000, // = 2 * 25.50 USD * tỷ giá (ví dụ)\n    "donVi": "Tháng"\n  }\n  // ... thêm các mục khác nếu cần\n]'}
+                      placeholder={`[
+  {
+    "description": "Tên sản phẩm/dịch vụ",
+    "quantity": 1,
+    "unit_price": 100000,
+    "currency": "VND",
+    "amount": 100000,
+    "donVi": "Cái"
+  },
+  {
+    "description": "Sản phẩm khác",
+    "quantity": 2,
+    "unit_price": 25.50,
+    "currency": "USD", 
+    "amount": 1200000,
+    "donVi": "Tháng"
+  }
+]`}
                       value={jsonInput}
                       onChange={(e) => setJsonInput(e.target.value)}
                     />

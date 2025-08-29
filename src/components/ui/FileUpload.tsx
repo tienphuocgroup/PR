@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { FileText, X, Upload, Eye } from 'lucide-react';
+import { FileText, X, Upload, Eye, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { validatePDFFile } from '../../utils/security';
 
 interface FileUploadProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<Record<string, unknown>>;
   name: string;
   label: string;
   required?: boolean;
@@ -23,6 +24,23 @@ export function FileUpload({
   const { setValue, watch } = form;
   const files = watch(name) || [];
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const validateAndProcessFiles = (newFiles: File[]): File[] => {
+    setError(null);
+    const validFiles: File[] = [];
+    
+    for (const file of newFiles) {
+      const validation = validatePDFFile(file);
+      if (!validation.isValid) {
+        setError(validation.error || 'File không hợp lệ');
+        continue;
+      }
+      validFiles.push(file);
+    }
+    
+    return validFiles;
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -40,12 +58,25 @@ export function FileUpload({
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const newFiles = Array.from(e.dataTransfer.files)
-        .filter(file => file.type === 'application/pdf');
+      const newFiles = Array.from(e.dataTransfer.files);
+      const validFiles = validateAndProcessFiles(newFiles);
       
-      if (newFiles.length > 0) {
-        const updatedFiles = [...files, ...newFiles].slice(0, maxFiles);
+      if (validFiles.length > 0) {
+        const currentFileCount = files.length;
+        const availableSlots = maxFiles - currentFileCount;
+        
+        if (availableSlots <= 0) {
+          setError(`Tối đa ${maxFiles} file được phép`);
+          return;
+        }
+        
+        const filesToAdd = validFiles.slice(0, availableSlots);
+        const updatedFiles = [...files, ...filesToAdd];
         setValue(name, updatedFiles, { shouldValidate: true });
+        
+        if (validFiles.length > availableSlots) {
+          setError(`Chỉ có thể thêm ${availableSlots} file (đã đạt giới hạn ${maxFiles} file)`);
+        }
       }
     }
   };
@@ -53,12 +84,30 @@ export function FileUpload({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
-      const updatedFiles = [...files, ...newFiles].slice(0, maxFiles);
-      setValue(name, updatedFiles, { shouldValidate: true });
+      const validFiles = validateAndProcessFiles(newFiles);
+      
+      if (validFiles.length > 0) {
+        const currentFileCount = files.length;
+        const availableSlots = maxFiles - currentFileCount;
+        
+        if (availableSlots <= 0) {
+          setError(`Tối đa ${maxFiles} file được phép`);
+          return;
+        }
+        
+        const filesToAdd = validFiles.slice(0, availableSlots);
+        const updatedFiles = [...files, ...filesToAdd];
+        setValue(name, updatedFiles, { shouldValidate: true });
+        
+        if (validFiles.length > availableSlots) {
+          setError(`Chỉ có thể thêm ${availableSlots} file (đã đạt giới hạn ${maxFiles} file)`);
+        }
+      }
     }
   };
 
   const removeFile = (index: number) => {
+    setError(null); // Clear any existing errors
     const updatedFiles = [...files];
     updatedFiles.splice(index, 1);
     setValue(name, updatedFiles.length > 0 ? updatedFiles : [], { shouldValidate: true });
@@ -104,6 +153,20 @@ export function FileUpload({
           onChange={handleChange}
         />
       </div>
+
+      {error && (
+        <div className="mt-2 flex items-center space-x-2 text-red-600 bg-red-50 p-2 rounded-md border border-red-200">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <p className="text-sm">{error}</p>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="ml-auto text-red-600 hover:text-red-800"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {files.length > 0 && (
         <div className="mt-4 space-y-2">

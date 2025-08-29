@@ -1,6 +1,7 @@
 import React from 'react';
 import { Controller, UseFormReturn, Path, FieldValues } from 'react-hook-form';
 import { cn } from '../../utils/cn';
+import { sanitizeInput } from '../../utils/security';
 
 interface FormFieldProps<T extends FieldValues> {
   form: UseFormReturn<T>;
@@ -62,13 +63,25 @@ export function FormField<T extends FieldValues>({
             return (
               <textarea
                 id={name}
-                {...field}
+                value={field.value || ''}
                 placeholder={placeholder}
                 className={cn(
                   'mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200',
                   errorMessage ? 'border-red-500' : ''
                 )}
                 rows={4}
+                onChange={(e) => {
+                  // Sanitize textarea input immediately to prevent XSS
+                  const sanitizedValue = sanitizeInput(e.target.value);
+                  const syntheticEvent = {
+                    ...e,
+                    target: {
+                      ...e.target,
+                      value: sanitizedValue
+                    }
+                  };
+                  field.onChange(syntheticEvent);
+                }}
               />
             );
           }
@@ -89,7 +102,16 @@ export function FormField<T extends FieldValues>({
                   const value = e.target.value === '' ? '' : Number(e.target.value);
                   field.onChange(value);
                 } else {
-                  field.onChange(e);
+                  // Sanitize text input immediately to prevent XSS
+                  const sanitizedValue = sanitizeInput(e.target.value);
+                  const syntheticEvent = {
+                    ...e,
+                    target: {
+                      ...e.target,
+                      value: sanitizedValue
+                    }
+                  };
+                  field.onChange(syntheticEvent);
                 }
               }}
             />
