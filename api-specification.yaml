@@ -1,0 +1,961 @@
+openapi: 3.0.3
+info:
+  title: TPG Payment Request AI API
+  description: |
+    AI-enhanced API for TPG Payment Request Form application. Provides intelligent features including
+    form auto-completion, validation, document parsing, and anomaly detection for Vietnamese payment 
+    request workflows.
+    
+    ## Features
+    - AI-powered form auto-completion based on historical data
+    - Intelligent validation and suggestions
+    - Natural language to structured form data conversion
+    - Document parsing for extracting payment information from PDFs
+    - Smart categorization and budget allocation
+    - Anomaly detection in payment requests
+    - Multi-provider AI abstraction layer
+    
+    ## Rate Limiting
+    All endpoints are subject to rate limiting:
+    - Standard tier: 100 requests per minute per API key
+    - Premium tier: 500 requests per minute per API key
+    
+    Rate limit headers are included in all responses:
+    - `X-RateLimit-Limit`: Maximum requests allowed per window
+    - `X-RateLimit-Remaining`: Remaining requests in current window
+    - `X-RateLimit-Reset`: Unix timestamp when window resets
+    
+  version: 1.0.0
+  contact:
+    name: TPG Development Team
+    email: dev@tpg.com.vn
+  license:
+    name: Proprietary
+    url: https://tpg.com.vn/license
+
+servers:
+  - url: https://api.tpg.com.vn/ai/v1
+    description: Production server
+  - url: https://staging-api.tpg.com.vn/ai/v1
+    description: Staging server
+  - url: http://localhost:3001/api/ai/v1
+    description: Local development server
+
+security:
+  - bearerAuth: []
+  - apiKey: []
+
+paths:
+  # Health check endpoint
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health check
+      description: Check API health and AI provider status
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # AI Form Auto-completion
+  /form/autocomplete:
+    post:
+      tags:
+        - Form Enhancement
+      summary: AI-powered form auto-completion
+      description: |
+        Suggests form field values based on partial input and historical data.
+        Uses machine learning to predict likely values for Vietnamese payment requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutocompleteRequest'
+            example:
+              partialData:
+                nguoiDeNghi: "Nguyễn Văn"
+                boPhan: "IT"
+                noiDungThanhToan: "Mua thiết bị"
+              context:
+                userId: "user123"
+                department: "IT"
+                previousRequests: 15
+      responses:
+        '200':
+          description: Autocomplete suggestions generated successfully
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per window
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Remaining requests in current window
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Window reset time (Unix timestamp)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutocompleteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # Intelligent Validation
+  /form/validate:
+    post:
+      tags:
+        - Form Enhancement
+      summary: Intelligent form validation and suggestions
+      description: |
+        Validates form data and provides intelligent suggestions for improvements.
+        Includes context-aware validation for Vietnamese business practices.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationRequest'
+      responses:
+        '200':
+          description: Validation completed with suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  # Natural Language Processing
+  /nlp/parse-request:
+    post:
+      tags:
+        - Natural Language Processing
+      summary: Convert natural language to form data
+      description: |
+        Converts Vietnamese natural language descriptions into structured payment request data.
+        Supports both text input and voice transcription.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NLPParseRequest'
+            example:
+              text: "Tôi cần thanh toán 5 triệu VND cho công ty ABC để mua máy tính cho phòng IT trong tháng này"
+              language: "vi"
+              context:
+                department: "IT"
+                budgetPeriod: "2024-03"
+      responses:
+        '200':
+          description: Natural language parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NLPParseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          description: Could not parse the provided text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Document Parsing
+  /documents/parse-pdf:
+    post:
+      tags:
+        - Document Processing
+      summary: Extract payment information from PDF documents
+      description: |
+        Analyzes uploaded PDF documents to extract payment request information.
+        Supports Vietnamese invoices, receipts, and contracts.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF file to parse (max 10MB)
+                extractionType:
+                  type: string
+                  enum: [invoice, receipt, contract, general]
+                  default: general
+                  description: Type of document for optimized parsing
+                language:
+                  type: string
+                  enum: [vi, en]
+                  default: vi
+                  description: Document language
+              required:
+                - file
+      responses:
+        '200':
+          description: PDF parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentParseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Smart Categorization
+  /categorization/suggest:
+    post:
+      tags:
+        - Smart Analytics
+      summary: Smart categorization and budget allocation
+      description: |
+        Automatically categorizes payment requests and suggests appropriate budget allocations
+        based on content analysis and historical patterns.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategorizationRequest'
+      responses:
+        '200':
+          description: Categorization suggestions generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategorizationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # Anomaly Detection
+  /anomaly/detect:
+    post:
+      tags:
+        - Smart Analytics
+      summary: Detect anomalies in payment requests
+      description: |
+        Analyzes payment requests for unusual patterns, potential fraud, or policy violations.
+        Uses machine learning models trained on TPG historical data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnomalyDetectionRequest'
+      responses:
+        '200':
+          description: Anomaly analysis completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomalyDetectionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # Real-time AI Assistance (Server-Sent Events)
+  /assistance/stream:
+    get:
+      tags:
+        - Real-time Features
+      summary: Real-time AI assistance stream
+      description: |
+        Establishes a Server-Sent Events connection for real-time AI assistance
+        while filling out payment request forms.
+      parameters:
+        - in: query
+          name: sessionId
+          required: true
+          schema:
+            type: string
+          description: Unique session identifier for the form
+        - in: query
+          name: features
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [autocomplete, validation, suggestions]
+          description: Enable specific real-time features
+      responses:
+        '200':
+          description: SSE stream established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                event: suggestion
+                data: {"field": "noiDungThanhToan", "suggestion": "Mua thiết bị văn phòng", "confidence": 0.85}
+                
+                event: validation
+                data: {"field": "soTien", "status": "warning", "message": "Số tiền cao hơn mức trung bình"}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # AI Provider Management
+  /providers/status:
+    get:
+      tags:
+        - Provider Management
+      summary: Get AI provider status
+      description: Check status and capabilities of configured AI providers
+      responses:
+        '200':
+          description: Provider status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvidersStatusResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authenticated requests
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for service-to-service authentication
+
+  schemas:
+    # Base schemas
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code for programmatic handling
+            message:
+              type: string
+              description: Human-readable error message in Vietnamese
+            details:
+              type: object
+              description: Additional error details
+            requestId:
+              type: string
+              description: Unique request identifier for debugging
+          required:
+            - code
+            - message
+      example:
+        error:
+          code: "VALIDATION_FAILED"
+          message: "Dữ liệu đầu vào không hợp lệ"
+          details:
+            field: "soTien"
+            reason: "Số tiền phải lớn hơn 0"
+          requestId: "req_123456789"
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        providers:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [online, offline, degraded]
+              responseTime:
+                type: number
+                description: Average response time in milliseconds
+              lastCheck:
+                type: string
+                format: date-time
+
+    # Payment Request related schemas
+    PaymentDetail:
+      type: object
+      properties:
+        stt:
+          type: integer
+          description: Số thứ tự
+        noiDung:
+          type: string
+          description: Nội dung chi tiết
+        donViTinh:
+          type: string
+          description: Đơn vị tính
+        soLuong:
+          type: number
+          description: Số lượng
+        donGia:
+          type: number
+          description: Đơn giá
+        thanhTien:
+          type: number
+          description: Thành tiền
+        ghiChu:
+          type: string
+          description: Ghi chú
+      required:
+        - noiDung
+        - soLuong
+        - donGia
+        - thanhTien
+
+    PaymentRequest:
+      type: object
+      properties:
+        ngay:
+          type: string
+          format: date
+          description: Ngày tạo đề nghị
+        nguoiDeNghi:
+          type: string
+          description: Người đề nghị thanh toán
+        boPhan:
+          type: string
+          description: Bộ phận
+        noiDungThanhToan:
+          type: string
+          description: Nội dung thanh toán
+        nhaCungCap:
+          type: string
+          description: Nhà cung cấp
+        soTienBangSo:
+          type: number
+          description: Số tiền bằng số
+        soTienBangChu:
+          type: string
+          description: Số tiền bằng chữ
+        chiTiet:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentDetail'
+        ghiChu:
+          type: string
+          description: Ghi chú
+      required:
+        - ngay
+        - nguoiDeNghi
+        - boPhan
+        - noiDungThanhToan
+        - nhaCungCap
+
+    # Auto-completion schemas
+    AutocompleteRequest:
+      type: object
+      properties:
+        partialData:
+          $ref: '#/components/schemas/PaymentRequest'
+        context:
+          type: object
+          properties:
+            userId:
+              type: string
+            department:
+              type: string
+            previousRequests:
+              type: integer
+              description: Number of previous requests by this user
+            timeRange:
+              type: string
+              enum: [week, month, quarter, year]
+              default: month
+              description: Historical data time range for suggestions
+        maxSuggestions:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 5
+          description: Maximum number of suggestions per field
+      required:
+        - partialData
+
+    AutocompleteResponse:
+      type: object
+      properties:
+        suggestions:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                value:
+                  type: string
+                confidence:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  description: Confidence score for the suggestion
+                source:
+                  type: string
+                  enum: [historical, pattern, ml_model]
+                  description: Source of the suggestion
+                metadata:
+                  type: object
+                  description: Additional context about the suggestion
+        processingTime:
+          type: number
+          description: Processing time in milliseconds
+        modelVersion:
+          type: string
+          description: AI model version used
+
+    # Validation schemas
+    ValidationRequest:
+      type: object
+      properties:
+        formData:
+          $ref: '#/components/schemas/PaymentRequest'
+        validationLevel:
+          type: string
+          enum: [basic, enhanced, strict]
+          default: enhanced
+          description: Level of validation strictness
+        context:
+          type: object
+          properties:
+            userRole:
+              type: string
+            departmentRules:
+              type: object
+            budgetConstraints:
+              type: object
+      required:
+        - formData
+
+    ValidationResponse:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Overall validation score
+        issues:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              severity:
+                type: string
+                enum: [error, warning, info]
+              message:
+                type: string
+                description: Issue description in Vietnamese
+              suggestion:
+                type: string
+                description: Suggested fix in Vietnamese
+              code:
+                type: string
+                description: Error code for programmatic handling
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [optimization, compliance, efficiency]
+              message:
+                type: string
+              impact:
+                type: string
+                enum: [low, medium, high]
+
+    # NLP schemas
+    NLPParseRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          maxLength: 5000
+          description: Vietnamese text to parse
+        language:
+          type: string
+          enum: [vi, en]
+          default: vi
+        context:
+          type: object
+          properties:
+            department:
+              type: string
+            budgetPeriod:
+              type: string
+            expectedAmount:
+              type: number
+        extractionHints:
+          type: array
+          items:
+            type: string
+          description: Specific fields to focus on during extraction
+      required:
+        - text
+
+    NLPParseResponse:
+      type: object
+      properties:
+        extractedData:
+          $ref: '#/components/schemas/PaymentRequest'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        uncertainFields:
+          type: array
+          items:
+            type: string
+          description: Fields that need user confirmation
+        alternativeInterpretations:
+          type: array
+          items:
+            type: object
+            properties:
+              interpretation:
+                $ref: '#/components/schemas/PaymentRequest'
+              confidence:
+                type: number
+              reason:
+                type: string
+
+    # Document parsing schemas
+    DocumentParseResponse:
+      type: object
+      properties:
+        extractedData:
+          $ref: '#/components/schemas/PaymentRequest'
+        documentInfo:
+          type: object
+          properties:
+            pages:
+              type: integer
+            size:
+              type: integer
+              description: File size in bytes
+            format:
+              type: string
+            language:
+              type: string
+        extractionResults:
+          type: object
+          properties:
+            tablesFound:
+              type: integer
+            fieldsExtracted:
+              type: integer
+            confidence:
+              type: number
+        rawText:
+          type: string
+          description: Extracted text content
+        metadata:
+          type: object
+          description: Additional document metadata
+
+    # Categorization schemas
+    CategorizationRequest:
+      type: object
+      properties:
+        paymentRequest:
+          $ref: '#/components/schemas/PaymentRequest'
+        options:
+          type: object
+          properties:
+            includeBudgetSuggestions:
+              type: boolean
+              default: true
+            includeApprovalWorkflow:
+              type: boolean
+              default: true
+            maxCategories:
+              type: integer
+              minimum: 1
+              maximum: 5
+              default: 3
+      required:
+        - paymentRequest
+
+    CategorizationResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Category name in Vietnamese
+              code:
+                type: string
+                description: Category code for system use
+              confidence:
+                type: number
+              description:
+                type: string
+        budgetAllocations:
+          type: array
+          items:
+            type: object
+            properties:
+              budgetCode:
+                type: string
+              budgetName:
+                type: string
+              allocatedAmount:
+                type: number
+              percentage:
+                type: number
+        approvalWorkflow:
+          type: object
+          properties:
+            requiredApprovers:
+              type: array
+              items:
+                type: string
+            estimatedProcessingTime:
+              type: string
+            specialRequirements:
+              type: array
+              items:
+                type: string
+
+    # Anomaly detection schemas
+    AnomalyDetectionRequest:
+      type: object
+      properties:
+        paymentRequest:
+          $ref: '#/components/schemas/PaymentRequest'
+        analysisDepth:
+          type: string
+          enum: [surface, detailed, comprehensive]
+          default: detailed
+        comparisonPeriod:
+          type: string
+          enum: [month, quarter, year]
+          default: quarter
+      required:
+        - paymentRequest
+
+    AnomalyDetectionResponse:
+      type: object
+      properties:
+        riskScore:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Overall risk score (0 = normal, 100 = highly anomalous)
+        anomalies:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [amount, vendor, frequency, timing, pattern]
+              severity:
+                type: string
+                enum: [low, medium, high, critical]
+              description:
+                type: string
+                description: Anomaly description in Vietnamese
+              recommendation:
+                type: string
+                description: Recommended action in Vietnamese
+              confidence:
+                type: number
+        comparisons:
+          type: object
+          properties:
+            historicalAverage:
+              type: number
+            departmentAverage:
+              type: number
+            similarRequests:
+              type: integer
+        flags:
+          type: array
+          items:
+            type: string
+            enum: [duplicate_vendor, unusual_amount, timing_anomaly, new_vendor, policy_violation]
+
+    # Provider management schemas
+    ProvidersStatusResponse:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+                enum: [openai, anthropic, local_model, custom]
+              status:
+                type: string
+                enum: [active, inactive, error]
+              capabilities:
+                type: array
+                items:
+                  type: string
+              limits:
+                type: object
+                properties:
+                  requestsPerMinute:
+                    type: integer
+                  tokensPerDay:
+                    type: integer
+              usage:
+                type: object
+                properties:
+                  requestsToday:
+                    type: integer
+                  tokensUsed:
+                    type: integer
+        defaultProvider:
+          type: string
+        fallbackProvider:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "BAD_REQUEST"
+              message: "Tham số đầu vào không hợp lệ"
+              requestId: "req_123456789"
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Không có quyền truy cập"
+              requestId: "req_123456789"
+
+    RateLimited:
+      description: Too many requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "RATE_LIMITED"
+              message: "Quá nhiều yêu cầu, vui lòng thử lại sau"
+              requestId: "req_123456789"
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "INTERNAL_ERROR"
+              message: "Lỗi hệ thống, vui lòng thử lại sau"
+              requestId: "req_123456789"
+
+  parameters:
+    ApiVersion:
+      name: X-API-Version
+      in: header
+      description: API version to use
+      schema:
+        type: string
+        default: "1.0"
+
+tags:
+  - name: System
+    description: System health and monitoring
+  - name: Form Enhancement
+    description: AI-powered form completion and validation
+  - name: Natural Language Processing
+    description: Convert natural language to structured data
+  - name: Document Processing
+    description: Extract information from uploaded documents
+  - name: Smart Analytics
+    description: Categorization, budget allocation, and anomaly detection
+  - name: Real-time Features
+    description: Streaming and real-time AI assistance
+  - name: Provider Management
+    description: AI provider configuration and monitoring
